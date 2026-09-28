@@ -104,6 +104,8 @@ class MainViewModel(
                 if (err.message == "PENDING_APPROVAL") {
                     _isPendingView.value = true
                     _authError.value = null
+                } else if (err.message == "SUSPENDED_ACCOUNT") {
+                    _authError.value = "⛔ اشتراك هذا الكافيه موقوف أو منتهي! يرجى مراجعة إدارة المنظومة للتجديد."
                 } else {
                     _authError.value = err.message ?: "خطأ في تسجيل الدخول"
                 }

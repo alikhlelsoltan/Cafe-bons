@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المشرف العام - إدارة الكافيهات والاشتراكات | Cafe Bons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold-primary: #F0A500;
+      --gold-secondary: #FFB703;
+      --bg-dark: #121212;
+      --surface-dark: #1A1A1A;
+      --card-dark: #222222;
+      --border-dark: #333333;
+      --text-white: #FFFFFF;
+      --text-gray: #A0A0A0;
+      --text-muted: #707070;
+      --green-success: #5CB85C;
+      --red-danger: #D9534F;
+      --blue-info: #33B5E5;
+      --orange-warning: #FF8800;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--surface-dark);
+      border-bottom: 1px solid var(--border-dark);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      font-size: 28px;
+      background: var(--card-dark);
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1.5px solid var(--gold-primary);
+    }
+
+    .brand-title h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .brand-title p {
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-env {
+      background: rgba(51, 181, 229, 0.15);
+      border: 1px solid var(--blue-info);
+      color: var(--blue-info);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon {
+      font-size: 32px;
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--card-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-number {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-white);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+
+    /* Tabs Filter */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: var(--surface-dark);
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-dark);
+    }
+
+    .tab-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      color: var(--text-gray);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--gold-primary);
+      border-color: var(--gold-primary);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .btn-add-cafe {
+      background: var(--gold-primary);
+      color: #000;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Cafes List / Table */
+    .cafes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .cafe-card {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .cafe-card:hover {
+      border-color: #555;
+    }
+
+    .cafe-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .cafe-card-info h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cafe-slug {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--gold-primary);
+      background: rgba(240, 165, 0, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .cafe-meta {
+      font-size: 12px;
+      color: var(--text-gray);
+      margin-top: 4px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-approved { background: rgba(92, 184, 92, 0.15); color: var(--green-success); border: 1px solid var(--green-success); }
+    .status-pending { background: rgba(255, 136, 0, 0.15); color: var(--orange-warning); border: 1px solid var(--orange-warning); }
+    .status-suspended { background: rgba(217, 83, 79, 0.15); color: var(--red-danger); border: 1px solid var(--red-danger); }
+
+    /* Subscription Details Bar */
+    .subscription-panel {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .plan-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .plan-expiry {
+      font-size: 12px;
+      color: var(--text-gray);
+      margin-top: 2px;
+    }
+
+    .expiry-days-left {
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .cafe-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-dark);
+      color: var(--text-white);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .btn-action:hover {
+      background: #333;
+    }
+
+    .btn-action.approve { background: rgba(92, 184, 92, 0.2); border-color: var(--green-success); color: var(--green-success); }
+    .btn-action.renew { background: rgba(240, 165, 0, 0.2); border-color: var(--gold-primary); color: var(--gold-primary); }
+    .btn-action.suspend { background: rgba(217, 83, 79, 0.2); border-color: var(--red-danger); color: var(--red-danger); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .modal-box h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--gold-primary);
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-gray);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 10px;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-title">
+        <h1>لوحة تحكم المطور والاشتراكات</h1>
+        <p>نظام سمارت مينيو السحابي (Multi-Tenant SaaS)</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge-env">Firebase: cafe-bons</span>
+      <span class="badge-env" style="border-color:var(--gold-primary); color:var(--gold-primary);">GitHub Pages Host</span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--gold-primary);">🏪</div>
+        <div>
+          <div class="stat-number" id="statTotalCafes">0</div>
+          <div class="stat-label">إجمالي الكافيهات المسجلة</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--green-success);">✓</div>
+        <div>
+          <div class="stat-number" id="statActiveCafes">0</div>
+          <div class="stat-label">اشتراكات نشطة معتمدة</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--orange-warning);">⏳</div>
+        <div>
+          <div class="stat-number" id="statPendingCafes">0</div>
+          <div class="stat-label">طلبات بانتظار الموافقة</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="color:var(--red-danger);">⚠️</div>
+        <div>
+          <div class="stat-number" id="statExpiredCafes">0</div>
+          <div class="stat-label">اشتراكات منتهية أو موقوفة</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Action Bar -->
+    <div class="filter-bar">
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="setFilter('all')">الكل</button>
+        <button class="tab-btn" onclick="setFilter('pending')">بانتظار الموافقة ⏳</button>
+        <button class="tab-btn" onclick="setFilter('active')">النشطة ✓</button>
+        <button class="tab-btn" onclick="setFilter('expired')">المنتهية والموقوفة ⚠️</button>
+      </div>
+
+      <button class="btn-add-cafe" onclick="openAddCafeModal()">
+        <span>+ إضافة كافيه جديد</span>
+      </button>
+    </div>
+
+    <!-- Cafes List -->
+    <div class="cafes-list" id="cafesList">
+      <!-- Injected via JavaScript -->
+    </div>
+
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal-overlay" id="addCafeModal">
+    <div class="modal-box">
+      <h2 id="modalTitle">إضافة كافيه جديد للاشتراك</h2>
+      <div class="form-group">
+        <label>اسم الكافيه</label>
+        <input type="text" id="modalCafeName" placeholder="مثال: كافيه الروشة">
+      </div>
+      <div class="form-group">
+        <label>المعرف الفريد (Slug بالإنجليزية)</label>
+        <input type="text" id="modalCafeSlug" placeholder="مثال: rawsheh-cafe">
+      </div>
+      <div class="form-group">
+        <label>كلمة مرور صاحب الكافيه</label>
+        <input type="text" id="modalCafePass" value="123456">
+      </div>
+      <div class="form-group">
+        <label>باقة الاشتراك</label>
+        <select id="modalPlanSelect">
+          <option value="trial_14">تجريبي مجاني (14 يوماً)</option>
+          <option value="monthly">باقة شهرية (30 يوماً)</option>
+          <option value="quarterly">باقة ربع سنوية (90 يوماً)</option>
+          <option value="yearly">باقة سنوية VIP (365 يوماً)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-action" onclick="closeAddCafeModal()">إلغاء</button>
+        <button class="btn-action renew" onclick="saveNewCafe()">حفظ وتفعيل</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initial Cafes Data
+    let cafes = [
+      {
+        id: 'bustan-cafe',
+        name: 'كافيه البستان',
+        phone: '+966 50 123 4567',
+        password: '123',
+        status: 'approved',
+        plan: 'yearly',
+        planName: 'باقة سنوية VIP',
+        expiryDate: '2027-09-01',
+        createdAt: '2026-09-01'
+      },
+      {
+        id: 'jasmine-cafe',
+        name: 'مقهى الياسمين',
+        phone: '+966 55 987 6543',
+        password: '123',
+        status: 'pending',
+        plan: 'trial_14',
+        planName: 'تجريبي (14 يوم)',
+        expiryDate: '2026-10-10',
+        createdAt: '2026-09-26'
+      },
+      {
+        id: 'al-andalus-cafe',
+        name: 'كافيه الأندلس',
+        phone: '+966 54 321 0000',
+        password: '123',
+        status: 'suspended',
+        plan: 'monthly',
+        planName: 'باقة شهرية',
+        expiryDate: '2026-09-20',
+        createdAt: '2026-08-20'
+      }
+    ];
+
+    let currentFilter = 'all';
+
+    function calculateDaysLeft(expiryStr) {
+      const exp = new Date(expiryStr);
+      const now = new Date();
+      const diffTime = exp - now;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function renderCafes() {
+      const listContainer = document.getElementById('cafesList');
+      listContainer.innerHTML = '';
+
+      // Update Top Stats
+      const total = cafes.length;
+      const pending = cafes.filter(c => c.status === 'pending').length;
+      const active = cafes.filter(c => c.status === 'approved' && calculateDaysLeft(c.expiryDate) > 0).length;
+      const expired = cafes.filter(c => c.status === 'suspended' || calculateDaysLeft(c.expiryDate) <= 0).length;
+
+      document.getElementById('statTotalCafes').textContent = total;
+      document.getElementById('statActiveCafes').textContent = active;
+      document.getElementById('statPendingCafes').textContent = pending;
+      document.getElementById('statExpiredCafes').textContent = expired;
+
+      // Filter list
+      let filtered = cafes;
+      if (currentFilter === 'pending') {
+        filtered = cafes.filter(c => c.status === 'pending');
+      } else if (currentFilter === 'active') {
+        filtered = cafes.filter(c => c.status === 'approved' && calculateDaysLeft(c.expiryDate) > 0);
+      } else if (currentFilter === 'expired') {
+        filtered = cafes.filter(c => c.status === 'suspended' || calculateDaysLeft(c.expiryDate) <= 0);
+      }
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div style="text-align:center; padding:40px; color:var(--text-muted); background:var(--surface-dark); border-radius:12px;">
+            لا توجد كافيهات مطابقة لهذا التصنيف
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(cafe => {
+        const daysLeft = calculateDaysLeft(cafe.expiryDate);
+        const isExpired = daysLeft <= 0;
+
+        let statusClass = 'status-approved';
+        let statusText = 'نشط ومعتمد ✓';
+
+        if (cafe.status === 'pending') {
+          statusClass = 'status-pending';
+          statusText = 'قيد المراجعة ⏳';
+        } else if (cafe.status === 'suspended' || isExpired) {
+          statusClass = 'status-suspended';
+          statusText = cafe.status === 'suspended' ? 'موقوف ومجمد ⛔' : 'منتهي الصلاحية ⚠️';
+        }
+
+        const card = document.createElement('div');
+        card.className = 'cafe-card';
+        card.innerHTML = `
+          <div class="cafe-card-header">
+            <div class="cafe-card-info">
+              <h3>
+                ☕ ${cafe.name}
+                <span class="cafe-slug">id: ${cafe.id}</span>
+              </h3>
+              <div class="cafe-meta">
+                <span>📞 ${cafe.phone || 'غير مسجل'}</span>
+                <span>🔑 كلمة المرور: ${cafe.password}</span>
+                <span>📅 تاريخ التسجيل: ${cafe.createdAt}</span>
+              </div>
+            </div>
+            <div class="status-badge ${statusClass}">
+              ${statusText}
+            </div>
+          </div>
+
+          <div class="subscription-panel">
+            <div>
+              <div class="plan-title">باقة الاشتراك: <strong>${cafe.planName}</strong></div>
+              <div class="plan-expiry">
+                تاريخ الانتهاء: <strong>${cafe.expiryDate}</strong>
+                (${daysLeft > 0 ? `<span class="expiry-days-left">متبقي ${daysLeft} يوماً</span>` : '<span style="color:var(--red-danger); font-weight:800;">منتهي</span>'})
+              </div>
+            </div>
+
+            <div class="cafe-actions">
+              ${cafe.status === 'pending' ? `
+                <button class="btn-action approve" onclick="approveCafe('${cafe.id}')">✓ موافقة وتفعيل</button>
+              ` : ''}
+
+              <button class="btn-action renew" onclick="extendSubscription('${cafe.id}', 30)">+ تجديد شهر</button>
+              <button class="btn-action renew" onclick="extendSubscription('${cafe.id}', 365)">+ تجديد سنة</button>
+
+              ${cafe.status === 'suspended' ? `
+                <button class="btn-action approve" onclick="unfreezeCafe('${cafe.id}')">إلغاء التجميد</button>
+              ` : `
+                <button class="btn-action suspend" onclick="freezeCafe('${cafe.id}')">تجميد</button>
+              `}
+
+              <a class="btn-action" href="index.html?cafe=${cafe.id}&table=1" target="_blank" style="text-decoration:none;">
+                🔗 منيو الزبون
+              </a>
+            </div>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderCafes();
+    }
+
+    async function syncToFirebase(cafe) {
+      try {
+        await fetch(`https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafe.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fields: {
+              cafeName: { stringValue: cafe.name },
+              cafeId: { stringValue: cafe.id },
+              password: { stringValue: cafe.password },
+              status: { stringValue: cafe.status },
+              plan: { stringValue: cafe.plan },
+              planName: { stringValue: cafe.planName },
+              expiryDate: { stringValue: cafe.expiryDate }
+            }
+          })
+        });
+      } catch (e) {
+        console.warn('Firestore update fallback', e);
+      }
+    }
+
+    function approveCafe(cafeId) {
+      const c = cafes.find(x => x.id === cafeId);
+      if (c) {
+        c.status = 'approved';
+        // Add 30 days if expired
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        c.expiryDate = d.toISOString().split('T')[0];
+        syncToFirebase(c);
+        renderCafes();
+        alert(`تم اعتماد كافيه ${c.name} بنجاح وتفعيل الاشتراك!`);
+      }
+    }
+
+    function extendSubscription(cafeId, days) {
+      const c = cafes.find(x => x.id === cafeId);
+      if (c) {
+        const currentExp = new Date(c.expiryDate > new Date().toISOString() ? c.expiryDate : new Date());
+        currentExp.setDate(currentExp.getDate() + days);
+        c.expiryDate = currentExp.toISOString().split('T')[0];
+        c.status = 'approved';
+        syncToFirebase(c);
+        renderCafes();
+        alert(`تم تمديد اشتراك ${c.name} لمدة ${days} يوماً بنجاح حتى ${c.expiryDate}!`);
+      }
+    }
+
+    function freezeCafe(cafeId) {
+      if (confirm('هل أنت متأكد من تجميد حساب هذا الكافيه ومنعه من استخدام التطبيق؟')) {
+        const c = cafes.find(x => x.id === cafeId);
+        if (c) {
+          c.status = 'suspended';
+          syncToFirebase(c);
+          renderCafes();
+        }
+      }
+    }
+
+    function unfreezeCafe(cafeId) {
+      const c = cafes.find(x => x.id === cafeId);
+      if (c) {
+        c.status = 'approved';
+        syncToFirebase(c);
+        renderCafes();
+      }
+    }
+
+    function openAddCafeModal() {
+      document.getElementById('addCafeModal').classList.add('open');
+    }
+
+    function closeAddCafeModal() {
+      document.getElementById('addCafeModal').classList.remove('open');
+    }
+
+    function saveNewCafe() {
+      const name = document.getElementById('modalCafeName').value.trim();
+      const slug = document.getElementById('modalCafeSlug').value.trim().toLowerCase();
+      const pass = document.getElementById('modalCafePass').value.trim();
+      const plan = document.getElementById('modalPlanSelect').value;
+
+      if (!name || !slug) {
+        alert('الرجاء إدخال اسم الكافيه والمعرف');
+        return;
+      }
+
+      let days = 14;
+      let planName = 'تجريبي (14 يوم)';
+      if (plan === 'monthly') { days = 30; planName = 'باقة شهرية'; }
+      if (plan === 'quarterly') { days = 90; planName = 'باقة ربع سنوية'; }
+      if (plan === 'yearly') { days = 365; planName = 'باقة سنوية VIP'; }
+
+      const exp = new Date();
+      exp.setDate(exp.getDate() + days);
+
+      const newCafe = {
+        id: slug,
+        name: name,
+        phone: '',
+        password: pass || '123456',
+        status: 'approved',
+        plan: plan,
+        planName: planName,
+        expiryDate: exp.toISOString().split('T')[0],
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+
+      cafes.unshift(newCafe);
+      syncToFirebase(newCafe);
+      closeAddCafeModal();
+      renderCafes();
+      alert(`تم إضافة كافيه ${name} وتفعيل اشتراكه بنجاح!`);
+    }
+
+    // Initial load
+    renderCafes();
+  </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ data class Cafe(
     val id: String,
     val name: String,
     val password: String,
-    val status: String = "approved", // "pending", "approved", "rejected"
+    val status: String = "approved", // "pending", "approved", "rejected", "suspended"
     val createdAt: String = "",
     val phone: String = "+966 50 123 4567",
     val welcomeMessage: String = "أهلاً وسهلاً بكم في كافيهنا! نتمنى لكم وقتاً ممتعاً",
@@ -13,7 +13,10 @@ data class Cafe(
     val servicePercentage: Double = 0.0,
     val wifiSsid: String = "Cafe-Guest",
     val wifiPassword: String = "Cafe2026",
-    val totalTables: Int = 12
+    val totalTables: Int = 12,
+    val subscriptionPlan: String = "سنوي VIP",
+    val subscriptionExpiry: String = "2027-09-01",
+    val subscriptionStatus: String = "active" // "active", "trial", "expired", "suspended"
 )
 
 data class Category(

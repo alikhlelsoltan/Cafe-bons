@@ -32,7 +32,26 @@
 
 ---
 
-## 🛠️ Tech Stack & Setup
+## 🌐 روابط منظومة الويب (GitHub Pages Live Links)
+مستودع المشروع: `alikhlelsoltan/Cafe-bons`
+
+1. **منيو الزبائن الذكي (Customer Web Menu):**
+   - الرابط العام: `https://alikhlelsoltan.github.io/Cafe-bons/`
+   - رابط الطاولة المباشر (المولّد على ملصقات الـ QR):
+     `https://alikhlelsoltan.github.io/Cafe-bons/?cafe=bustan-cafe&table=1`
+   - يفتح للمستخدم فور مسح الكود، يتيح اختيار المواد، السلة، وإرسال الطلب للكاشير مباشرة.
+
+2. **لوحة تحكم المطور لإدارة الاشتراكات (Developer SaaS Admin):**
+   - الرابط: `https://alikhlelsoltan.github.io/Cafe-bons/admin.html`
+   - تمكّنك من:
+     - الموافقة على طلبات الكافيهات الجديدة وتفعيلها.
+     - إدارة الاشتراكات (شهري، ربع سنوي، سنوي VIP، أو تجريبي 14 يوماً).
+     - تجديد وتمديد مدة الاشتراك (+شهر / +سنة).
+     - تجميد الحساب أو إيقافه للمتأخرين عن الدفع لمنعهم من دخول التطبيق.
+
+3. **توليد وتحميل ملف الـ APK تلقائياً عبر GitHub Actions:**
+   - تم إعداد خطة عمل تلقائية في `.github/workflows/build-apk.yml`.
+   - عند كل تحديث في فرع `main`، يبدأ GitHub بتجميع الكود ويوفر لك ملف `cafe-bons-app-debug.apk` للتنزيل المباشر من تبويب **Actions ➡️ Artifacts**.
 - **OS / Platform:** Android (Kotlin DSL, SDK 36, MinSdk 26)
 - **UI Toolkit:** Jetpack Compose + Material Design 3 (M3) Dark Luxe Theme
 - **Package Name:** `com.smartmenu.cafeapp`

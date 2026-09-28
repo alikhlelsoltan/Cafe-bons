@@ -70,6 +70,20 @@ fun DashboardScreen(viewModel: MainViewModel) {
                     ) {
                         Text(text = "معتمد", color = SuccessGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0x22F0A500), RoundedCornerShape(4.dp))
+                            .border(1.dp, GoldPrimary, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "اشتراك ${cafe.subscriptionPlan} (ساري حتى ${cafe.subscriptionExpiry})",
+                            color = GoldPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 Text(
                     text = "معرف الكافيه: ${cafe.id}",
@@ -269,7 +283,7 @@ fun DashboardScreen(viewModel: MainViewModel) {
                         fontSize = 13.sp
                     )
                     Text(
-                        text = "Firebase Firestore: cafe-bons | Package: com.smartmenu.cafeapp",
+                        text = "GitHub Pages: alikhlelsoltan.github.io/Cafe-bons | Firebase: cafe-bons",
                         color = TextMuted,
                         fontSize = 11.sp
                     )

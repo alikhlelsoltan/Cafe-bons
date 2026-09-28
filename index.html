@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سمارت مينيو - قائمة الطعام الذكية</title>
+  <meta name="description" content="منيو الكافيه الذكي - اطلب مباشرة من طاولتك">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold-primary: #F0A500;
+      --gold-secondary: #FFB703;
+      --bg-dark: #121212;
+      --surface-dark: #1E1E1E;
+      --card-dark: #252525;
+      --border-dark: #333333;
+      --text-white: #FFFFFF;
+      --text-gray: #A0A0A0;
+      --text-muted: #707070;
+      --green-success: #5CB85C;
+      --red-danger: #D9534F;
+      --blue-info: #33B5E5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, #1f1f1f 0%, #161616 100%);
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--border-dark);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cafe-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cafe-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: #2a2a2a;
+      border: 1.5px solid var(--gold-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .cafe-info h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .cafe-info p {
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+
+    .table-badge {
+      background: rgba(240, 165, 0, 0.15);
+      border: 1.5px solid var(--gold-primary);
+      color: var(--gold-primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Welcome & Wi-Fi Banner */
+    .banner {
+      background: #18221b;
+      border: 1px solid rgba(92, 184, 92, 0.4);
+      margin: 12px 16px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: #cfdcd0;
+    }
+
+    .wifi-tag {
+      background: #1f2833;
+      border: 1px solid var(--blue-info);
+      margin: 0 16px 12px 16px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-white);
+    }
+
+    .wifi-tag span {
+      color: var(--blue-info);
+      font-weight: 700;
+    }
+
+    /* Categories Bar */
+    .categories-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 6px 16px 14px 16px;
+      scrollbar-width: none;
+    }
+    .categories-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-chip {
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      color: var(--text-gray);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .category-chip.active {
+      background: var(--gold-primary);
+      border-color: var(--gold-primary);
+      color: #000;
+      font-weight: 700;
+    }
+
+    /* Products Grid */
+    .products-container {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .product-card {
+      background: var(--surface-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      transition: transform 0.1s ease;
+    }
+
+    .product-card:active {
+      transform: scale(0.99);
+    }
+
+    .product-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      background: var(--card-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .product-details {
+      flex: 1;
+    }
+
+    .product-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .product-desc {
+      font-size: 11px;
+      color: var(--text-gray);
+      margin: 2px 0 6px 0;
+      line-height: 1.4;
+    }
+
+    .product-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .btn-add {
+      background: var(--card-dark);
+      border: 1px solid var(--gold-primary);
+      color: var(--text-white);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .qty-counter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-dark);
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border-dark);
+    }
+
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      border: none;
+      background: #333;
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .qty-btn.minus { color: var(--red-danger); }
+    .qty-btn.plus { color: var(--green-success); }
+    .qty-value { font-size: 13px; font-weight: 800; min-width: 14px; text-align: center; }
+
+    /* Bottom Cart Float Bar */
+    .cart-float-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      border-top: 1.5px solid var(--gold-primary);
+      padding: 12px 18px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.8);
+    }
+
+    .cart-float-bar.visible {
+      display: flex;
+    }
+
+    .cart-info-total {
+      font-size: 12px;
+      color: var(--text-gray);
+    }
+
+    .cart-total-amount {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .btn-checkout {
+      background: var(--gold-primary);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Modal / Drawer */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: var(--surface-dark);
+      width: 100%;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 18px 30px 18px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-top: 1px solid var(--border-dark);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-dark);
+      padding-bottom: 10px;
+    }
+
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--gold-primary);
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: var(--text-gray);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #282828;
+    }
+
+    .notes-input {
+      width: 100%;
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 10px;
+      color: #fff;
+      font-size: 13px;
+      margin-top: 12px;
+      resize: none;
+    }
+
+    .order-summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-gray);
+    }
+
+    .order-summary-row.total {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-dark);
+    }
+
+    .order-summary-row.total span:last-child {
+      color: var(--gold-primary);
+    }
+
+    .btn-submit-order {
+      width: 100%;
+      background: var(--gold-primary);
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      margin-top: 18px;
+      cursor: pointer;
+    }
+
+    /* Success Screen */
+    .success-box {
+      text-align: center;
+      padding: 30px 10px;
+    }
+    .success-icon { font-size: 54px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-top">
+      <div class="cafe-brand">
+        <div class="cafe-logo" id="cafeIcon">☕</div>
+        <div class="cafe-info">
+          <h1 id="cafeNameDisplay">كافيه البستان</h1>
+          <p id="cafeSubtitle">قائمة المشروبات والحلويات</p>
+        </div>
+      </div>
+      <div class="table-badge">
+        <span>🪑 طاولة</span>
+        <span id="tableNumberDisplay">1</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Welcome Banner -->
+  <div class="banner" id="welcomeBanner">
+    <span>✨</span>
+    <span id="welcomeText">أهلاً وسهلاً بكم في كافيهنا! نتمنى لكم أمتع الأوقات</span>
+  </div>
+
+  <!-- Wi-Fi Tag -->
+  <div class="wifi-tag" id="wifiContainer">
+    <div>📶 شبكة Wi-Fi: <span id="wifiSsid">Bustan-VIP</span></div>
+    <div>كلمة السر: <span id="wifiPass">CoffeeBustan2026</span></div>
+  </div>
+
+  <!-- Categories Filter -->
+  <div class="categories-bar" id="categoriesBar">
+    <div class="category-chip active" onclick="filterCategory('all')">الكل</div>
+    <div class="category-chip" onclick="filterCategory('cat_hot')">☕ مشروبات ساخنة</div>
+    <div class="category-chip" onclick="filterCategory('cat_cold')">🧊 مشروبات باردة</div>
+    <div class="category-chip" onclick="filterCategory('cat_sweets')">🍰 حلويات ومخبوزات</div>
+    <div class="category-chip" onclick="filterCategory('cat_specialty')">✨ قهوة مختصة V60</div>
+    <div class="category-chip" onclick="filterCategory('cat_shisha')">💨 شيشة ومعسلات</div>
+  </div>
+
+  <!-- Products List -->
+  <main class="products-container" id="productsContainer">
+    <!-- Rendered dynamically via JS -->
+  </main>
+
+  <!-- Bottom Floating Cart Bar -->
+  <div class="cart-float-bar" id="cartFloatBar">
+    <div>
+      <div class="cart-info-total" id="cartCountLabel">0 مادة في السلة</div>
+      <div class="cart-total-amount" id="cartTotalFloat">0.00 ر.س</div>
+    </div>
+    <button class="btn-checkout" onclick="openCartModal()">
+      <span>🛒 استعراض الطلب</span>
+    </button>
+  </div>
+
+  <!-- Cart Modal Sheet -->
+  <div class="modal-overlay" id="cartModal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3>🧾 تأكيد طلب طاولة <span id="modalTableNumber">1</span></h3>
+        <button class="btn-close" onclick="closeCartModal()">✕</button>
+      </div>
+
+      <div id="modalCartItemsList">
+        <!-- Cart Items -->
+      </div>
+
+      <textarea id="orderNotesInput" class="notes-input" rows="2" placeholder="ملاحظات إضافية (مثل: سكر خفيف، بدون ثلج، تحضير سريع)..."></textarea>
+
+      <div class="order-summary-row">
+        <span>المجموع الفرعي:</span>
+        <span id="modalSubtotal">0.00 ر.س</span>
+      </div>
+      <div class="order-summary-row">
+        <span>ضريبة القيمة المضافة (15%):</span>
+        <span id="modalVat">0.00 ر.س</span>
+      </div>
+      <div class="order-summary-row total">
+        <span>الإجمالي المستحق:</span>
+        <span id="modalTotal">0.00 ر.س</span>
+      </div>
+
+      <button class="btn-submit-order" id="btnSubmitOrder" onclick="submitCustomerOrder()">
+        🚀 إرسال الطلب إلى الكاشير والتحضير
+      </button>
+    </div>
+  </div>
+
+  <!-- Order Success Modal -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal-sheet success-box">
+      <div class="success-icon">🎉</div>
+      <h3 style="color:var(--gold-primary); font-size: 20px; font-weight: 800;">تم إرسال طلبك بنجاح!</h3>
+      <p style="color:var(--text-gray); font-size: 13px; margin: 10px 0 18px 0; line-height: 1.6;">
+        تم استلام طلبك لطاولة <strong id="successTableNum" style="color:#fff;">1</strong> برقم بون <strong id="successOrderRef" style="color:var(--gold-primary);">#--</strong> وجاري إعداده في المطبخ الآن.
+      </p>
+      <button class="btn-submit-order" onclick="resetOrderAndClose()">
+        العودة لتصفح المنيو
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Parse URL params: ?cafe=bustan-cafe&table=2
+    const urlParams = new URLSearchParams(window.location.search);
+    const cafeId = urlParams.get('cafe') || 'bustan-cafe';
+    const tableNumber = parseInt(urlParams.get('table')) || 1;
+
+    document.getElementById('tableNumberDisplay').textContent = tableNumber;
+    document.getElementById('modalTableNumber').textContent = tableNumber;
+
+    // Default Products Data
+    const productsData = [
+      { id: 'p1', cat: 'cat_hot', name: 'كابتشينو إيطالي', desc: 'مزيج فاخر من الإسبريسو وحليب مبخر بطبقة رغوة ناعمة', price: 18.0, icon: '☕' },
+      { id: 'p2', cat: 'cat_hot', name: 'إسبريسو دبل شوت', desc: 'خلاصة حبوب البن المحمصة الطازجة بنكهة قوية وقوام مخملي', price: 14.0, icon: '☕' },
+      { id: 'p3', cat: 'cat_hot', name: 'فلات وايت كلاسيك', desc: 'إسبريسو مكثف مع حليب ساخن ومايكروفوم ناعم', price: 19.0, icon: '☕' },
+      { id: 'p4', cat: 'cat_hot', name: 'شاي كرك بالزعفران', desc: 'شاي أسود معتّق مع حليب مبخر وهيل وزعفران أصلي', price: 12.0, icon: '🫖' },
+      { id: 'p5', cat: 'cat_cold', name: 'سبانش لاتيه مثلج', desc: 'المشروب الأكثر طلباً: حليب محلى مع إسبريسو وثلج', price: 22.0, icon: '🧊' },
+      { id: 'p6', cat: 'cat_cold', name: 'آيس أمريكانو منعش', desc: 'إسبريسو مثلج مع ماء بارد ومذاق نقي خالي من السكر', price: 16.0, icon: '🧊' },
+      { id: 'p7', cat: 'cat_cold', name: 'موهيتو توت أزرق بلوبيري', desc: 'توت بري منعش مع نعناع طازج وليمون ومياه غازية', price: 24.0, icon: '🫐' },
+      { id: 'p8', cat: 'cat_sweets', name: 'تشيز كيك سان سيباستيان', desc: 'تشيز كيك إسباني محروق بقوام كريمي مع صوص شوكولاتة بلجيكية', price: 28.0, icon: '🍰' },
+      { id: 'p9', cat: 'cat_sweets', name: 'كيكة الزعفران الملكية', desc: 'كيكة إسفنجية غارقة بحليب الزعفران ومزينة بالكريمة الهشة', price: 26.0, icon: '🥮' },
+      { id: 'p10', cat: 'cat_specialty', name: 'قهوة كولومبيا V60', desc: 'إيحاءات الفواكه الحمضية والشوكولاتة بتقطير يدوي فائق الدقة', price: 25.0, icon: '☕' },
+      { id: 'p11', cat: 'cat_shisha', name: 'شيشة تفاحتين فاخر', desc: 'معسل فاخر مميز مع فحم طبيعي وخدمة تغيير الفحم المستمرة', price: 45.0, icon: '💨' }
+    ];
+
+    let cart = {}; // { productId: quantity }
+    let currentCategory = 'all';
+
+    function renderProducts() {
+      const container = document.getElementById('productsContainer');
+      container.innerHTML = '';
+
+      const filtered = currentCategory === 'all' 
+        ? productsData 
+        : productsData.filter(p => p.cat === currentCategory);
+
+      filtered.forEach(prod => {
+        const qty = cart[prod.id] || 0;
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="product-icon">${prod.icon}</div>
+          <div class="product-details">
+            <div class="product-title">${prod.name}</div>
+            <div class="product-desc">${prod.desc}</div>
+            <div class="product-price">${prod.price.toFixed(2)} ر.س</div>
+          </div>
+          <div>
+            ${qty === 0 ? `
+              <button class="btn-add" onclick="addToCart('${prod.id}')">+ إضافة</button>
+            ` : `
+              <div class="qty-counter">
+                <button class="qty-btn minus" onclick="removeFromCart('${prod.id}')">-</button>
+                <span class="qty-value">${qty}</span>
+                <button class="qty-btn plus" onclick="addToCart('${prod.id}')">+</button>
+              </div>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateCartBar();
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      const chips = document.querySelectorAll('.category-chip');
+      chips.forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      renderProducts();
+    }
+
+    function addToCart(productId) {
+      cart[productId] = (cart[productId] || 0) + 1;
+      renderProducts();
+    }
+
+    function removeFromCart(productId) {
+      if (cart[productId]) {
+        cart[productId]--;
+        if (cart[productId] <= 0) {
+          delete cart[productId];
+        }
+      }
+      renderProducts();
+    }
+
+    function updateCartBar() {
+      const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+      const subtotal = Object.entries(cart).reduce((sum, [id, qty]) => {
+        const prod = productsData.find(p => p.id === id);
+        return sum + (prod ? prod.price * qty : 0);
+      }, 0);
+      const vat = subtotal * 0.15;
+      const total = subtotal + vat;
+
+      const floatBar = document.getElementById('cartFloatBar');
+      if (totalItems > 0) {
+        floatBar.classList.add('visible');
+        document.getElementById('cartCountLabel').textContent = `${totalItems} مواد في السلة`;
+        document.getElementById('cartTotalFloat').textContent = `${total.toFixed(2)} ر.س`;
+      } else {
+        floatBar.classList.remove('visible');
+      }
+    }
+
+    function openCartModal() {
+      const modal = document.getElementById('cartModal');
+      const itemsContainer = document.getElementById('modalCartItemsList');
+      itemsContainer.innerHTML = '';
+
+      let subtotal = 0;
+      Object.entries(cart).forEach(([id, qty]) => {
+        const prod = productsData.find(p => p.id === id);
+        if (prod) {
+          const itemTotal = prod.price * qty;
+          subtotal += itemTotal;
+          const row = document.createElement('div');
+          row.className = 'modal-cart-item';
+          row.innerHTML = `
+            <div>
+              <strong style="font-size:14px;">${prod.name}</strong>
+              <div style="font-size:12px; color:var(--gold-primary);">${prod.price.toFixed(2)} ر.س × ${qty}</div>
+            </div>
+            <div style="font-weight:700; font-size:14px;">${itemTotal.toFixed(2)} ر.س</div>
+          `;
+          itemsContainer.appendChild(row);
+        }
+      });
+
+      const vat = subtotal * 0.15;
+      const total = subtotal + vat;
+
+      document.getElementById('modalSubtotal').textContent = `${subtotal.toFixed(2)} ر.س`;
+      document.getElementById('modalVat').textContent = `${vat.toFixed(2)} ر.س`;
+      document.getElementById('modalTotal').textContent = `${total.toFixed(2)} ر.س`;
+
+      modal.classList.add('open');
+    }
+
+    function closeCartModal() {
+      document.getElementById('cartModal').classList.remove('open');
+    }
+
+    async function submitCustomerOrder() {
+      const btn = document.getElementById('btnSubmitOrder');
+      btn.textContent = 'جاري الإرسال...';
+      btn.disabled = true;
+
+      const orderRef = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const notes = document.getElementById('orderNotesInput').value.trim();
+
+      const orderPayload = {
+        orderId: orderRef,
+        cafeId: cafeId,
+        tableNumber: tableNumber,
+        items: Object.entries(cart).map(([id, qty]) => {
+          const p = productsData.find(x => x.id === id);
+          return { id, name: p.name, price: p.price, quantity: qty };
+        }),
+        notes: notes,
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      // Sync with Firebase Firestore REST API for cafe-bons
+      try {
+        await fetch(`https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafeId}/orders/${orderRef}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fields: {
+              orderId: { stringValue: orderRef },
+              tableNumber: { integerValue: tableNumber.toString() },
+              status: { stringValue: 'pending' },
+              createdAt: { stringValue: orderPayload.createdAt },
+              notes: { stringValue: notes }
+            }
+          })
+        });
+      } catch (err) {
+        console.warn('Firebase sync offline fallback', err);
+      }
+
+      closeCartModal();
+      document.getElementById('successTableNum').textContent = tableNumber;
+      document.getElementById('successOrderRef').textContent = '#' + orderRef;
+      document.getElementById('successModal').classList.add('open');
+
+      btn.textContent = '🚀 إرسال الطلب إلى الكاشير والتحضير';
+      btn.disabled = false;
+    }
+
+    function resetOrderAndClose() {
+      cart = {};
+      renderProducts();
+      document.getElementById('successModal').classList.remove('open');
+    }
+
+    // Initial render
+    renderProducts();
+  </script>
+</body>
+</html>

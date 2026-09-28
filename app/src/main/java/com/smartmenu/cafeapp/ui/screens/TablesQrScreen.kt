@@ -124,7 +124,7 @@ fun TablesQrScreen(viewModel: MainViewModel) {
 
     // Single Table QR Modal
     selectedTableForQr?.let { tableNum ->
-        val tableUrl = "https://cafe-bons.web.app/?cafe=${cafe.id}&table=$tableNum"
+        val tableUrl = "https://alikhlelsoltan.github.io/Cafe-bons/?cafe=${cafe.id}&table=$tableNum"
         Dialog(onDismissRequest = { viewModel.setSelectedTableForQr(null) }) {
             Card(
                 modifier = Modifier
@@ -313,7 +313,7 @@ private fun TableCard(
 
             // Mini QR Thumbnail
             QrCodeView(
-                data = "https://cafe-bons.web.app/?cafe=$cafeId&table=${table.tableNumber}",
+                data = "https://alikhlelsoltan.github.io/Cafe-bons/?cafe=$cafeId&table=${table.tableNumber}",
                 modifier = Modifier.size(90.dp)
             )
 

@@ -211,7 +211,7 @@ fun BonReceiptDialog(
 
                         // QR on receipt
                         QrCodeView(
-                            data = "https://cafe-bons.web.app/?cafe=${cafe.id}&order=${order.id}",
+                            data = "https://alikhlelsoltan.github.io/Cafe-bons/?cafe=${cafe.id}&order=${order.id}",
                             modifier = Modifier.size(90.dp)
                         )
 

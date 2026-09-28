@@ -202,6 +202,10 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             return@withContext Result.failure(Exception("كلمة المرور غير صحيحة!"))
         }
 
+        if (found.status == "suspended") {
+            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
+        }
+
         if (found.status != "approved") {
             return@withContext Result.failure(Exception("PENDING_APPROVAL"))
         }
