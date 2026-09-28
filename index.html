@@ -532,20 +532,27 @@
     document.getElementById('tableNumberDisplay').textContent = tableNumber;
     document.getElementById('modalTableNumber').textContent = tableNumber;
 
-    // Default Products Data
-    const productsData = [
-      { id: 'p1', cat: 'cat_hot', name: 'كابتشينو إيطالي', desc: 'مزيج فاخر من الإسبريسو وحليب مبخر بطبقة رغوة ناعمة', price: 18.0, icon: '☕' },
-      { id: 'p2', cat: 'cat_hot', name: 'إسبريسو دبل شوت', desc: 'خلاصة حبوب البن المحمصة الطازجة بنكهة قوية وقوام مخملي', price: 14.0, icon: '☕' },
-      { id: 'p3', cat: 'cat_hot', name: 'فلات وايت كلاسيك', desc: 'إسبريسو مكثف مع حليب ساخن ومايكروفوم ناعم', price: 19.0, icon: '☕' },
-      { id: 'p4', cat: 'cat_hot', name: 'شاي كرك بالزعفران', desc: 'شاي أسود معتّق مع حليب مبخر وهيل وزعفران أصلي', price: 12.0, icon: '🫖' },
-      { id: 'p5', cat: 'cat_cold', name: 'سبانش لاتيه مثلج', desc: 'المشروب الأكثر طلباً: حليب محلى مع إسبريسو وثلج', price: 22.0, icon: '🧊' },
-      { id: 'p6', cat: 'cat_cold', name: 'آيس أمريكانو منعش', desc: 'إسبريسو مثلج مع ماء بارد ومذاق نقي خالي من السكر', price: 16.0, icon: '🧊' },
-      { id: 'p7', cat: 'cat_cold', name: 'موهيتو توت أزرق بلوبيري', desc: 'توت بري منعش مع نعناع طازج وليمون ومياه غازية', price: 24.0, icon: '🫐' },
-      { id: 'p8', cat: 'cat_sweets', name: 'تشيز كيك سان سيباستيان', desc: 'تشيز كيك إسباني محروق بقوام كريمي مع صوص شوكولاتة بلجيكية', price: 28.0, icon: '🍰' },
-      { id: 'p9', cat: 'cat_sweets', name: 'كيكة الزعفران الملكية', desc: 'كيكة إسفنجية غارقة بحليب الزعفران ومزينة بالكريمة الهشة', price: 26.0, icon: '🥮' },
-      { id: 'p10', cat: 'cat_specialty', name: 'قهوة كولومبيا V60', desc: 'إيحاءات الفواكه الحمضية والشوكولاتة بتقطير يدوي فائق الدقة', price: 25.0, icon: '☕' },
-      { id: 'p11', cat: 'cat_shisha', name: 'شيشة تفاحتين فاخر', desc: 'معسل فاخر مميز مع فحم طبيعي وخدمة تغيير الفحم المستمرة', price: 45.0, icon: '💨' }
+    // Categories Filter
+    const categoriesData = [
+      { id: 'all', name: 'الكل' },
+      { id: 'cat_hot', name: '☕ مشروبات ساخنة' },
+      { id: 'cat_cold', name: '🧃 مشروبات باردة وعصائر' },
+      { id: 'cat_sweets', name: '🍰 حلويات ومخبوزات' },
+      { id: 'cat_shisha', name: '💨 أركيلة ومعسلات' }
     ];
+
+    // Default Products Data (Matching App Screenshot)
+    const productsData = [
+      { id: 'p1', cat: 'cat_shisha', name: 'أركيلة تفاحتين فاخر', desc: 'رأس فخاري مجهز بأجود أنواع الفحم الطبيعي', price: 7000.0, icon: '💨' },
+      { id: 'p2', cat: 'cat_sweets', name: 'تشيز كيك لوتس دافئ', desc: 'طبقة بسكويت مقرمشة مع كريمة جبنة وصوص زبدة اللوتس', price: 5500.0, icon: '🍰' },
+      { id: 'p3', cat: 'cat_hot', name: 'شاي عراقي مهيل بالاستكانة', desc: 'شاي سيلاني فاخر مخدر على الفحم مع حبات الهيل', price: 1500.0, icon: '🫖' },
+      { id: 'p4', cat: 'cat_hot', name: 'قهوة تركي بالهيل', desc: 'قهوة تركية محمصة بعناية ومغلية على الرمل مع الهيل', price: 2750.0, icon: '☕' },
+      { id: 'p5', cat: 'cat_cold', name: 'موهيتو بلوبيري منعش', desc: 'توت بري منعش مع نعناع طازج وليمون ومياه غازية', price: 4000.0, icon: '🫐' },
+      { id: 'p6', cat: 'cat_cold', name: 'عصير برتقال طبيعي فريش', desc: 'عصير برتقال طبيعي 100% معصور طازج بدون سكر مضاف', price: 3500.0, icon: '🍊' },
+      { id: 'p7', cat: 'cat_cold', name: 'سبانش لاتيه مثلج', desc: 'إسبريسو غني مع حليب محلى وثلج منعش', price: 4500.0, icon: '🧊' }
+    ];
+
+    const currencySymbol = 'د.ع';
 
     let cart = {}; // { productId: quantity }
     let currentCategory = 'all';
@@ -567,7 +574,7 @@
           <div class="product-details">
             <div class="product-title">${prod.name}</div>
             <div class="product-desc">${prod.desc}</div>
-            <div class="product-price">${prod.price.toFixed(2)} ر.س</div>
+            <div class="product-price">${prod.price.toLocaleString()} ${currencySymbol}</div>
           </div>
           <div>
             ${qty === 0 ? `
@@ -623,7 +630,7 @@
       if (totalItems > 0) {
         floatBar.classList.add('visible');
         document.getElementById('cartCountLabel').textContent = `${totalItems} مواد في السلة`;
-        document.getElementById('cartTotalFloat').textContent = `${total.toFixed(2)} ر.س`;
+        document.getElementById('cartTotalFloat').textContent = `${total.toLocaleString()} ${currencySymbol}`;
       } else {
         floatBar.classList.remove('visible');
       }
@@ -645,20 +652,19 @@
           row.innerHTML = `
             <div>
               <strong style="font-size:14px;">${prod.name}</strong>
-              <div style="font-size:12px; color:var(--gold-primary);">${prod.price.toFixed(2)} ر.س × ${qty}</div>
+              <div style="font-size:12px; color:var(--gold-primary);">${prod.price.toLocaleString()} ${currencySymbol} × ${qty}</div>
             </div>
-            <div style="font-weight:700; font-size:14px;">${itemTotal.toFixed(2)} ر.س</div>
+            <div style="font-weight:700; font-size:14px;">${itemTotal.toLocaleString()} ${currencySymbol}</div>
           `;
           itemsContainer.appendChild(row);
         }
       });
 
-      const vat = subtotal * 0.15;
-      const total = subtotal + vat;
+      const total = subtotal;
 
-      document.getElementById('modalSubtotal').textContent = `${subtotal.toFixed(2)} ر.س`;
-      document.getElementById('modalVat').textContent = `${vat.toFixed(2)} ر.س`;
-      document.getElementById('modalTotal').textContent = `${total.toFixed(2)} ر.س`;
+      document.getElementById('modalSubtotal').textContent = `${subtotal.toLocaleString()} ${currencySymbol}`;
+      document.getElementById('modalVat').textContent = `0 ${currencySymbol}`;
+      document.getElementById('modalTotal').textContent = `${total.toLocaleString()} ${currencySymbol}`;
 
       modal.classList.add('open');
     }

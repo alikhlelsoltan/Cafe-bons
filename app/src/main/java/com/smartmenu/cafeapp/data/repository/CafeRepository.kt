@@ -47,10 +47,10 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             password = "123",
             status = "approved",
             createdAt = "2026-09-01",
-            phone = "+966 50 123 4567",
+            phone = "+964 770 123 4567",
             welcomeMessage = "أهلاً وسهلاً بكم في كافيه البستان! مسح الباركود يتيح لكم استعراض قائمتنا والطلب مباشرة لطاولتكم ☕",
-            currency = "SAR",
-            vatPercentage = 15.0,
+            currency = "د.ع",
+            vatPercentage = 0.0,
             wifiSsid = "Bustan-VIP",
             wifiPassword = "CoffeeBustan2026",
             totalTables = 12
@@ -62,10 +62,10 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             password = "123",
             status = "pending",
             createdAt = "2026-09-25",
-            phone = "+966 55 987 6543",
+            phone = "+964 771 987 6543",
             welcomeMessage = "مرحباً بكم في مقهى الياسمين",
-            currency = "SAR",
-            vatPercentage = 15.0,
+            currency = "د.ع",
+            vatPercentage = 0.0,
             totalTables = 8
         )
 
@@ -83,25 +83,20 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     private fun setupCafeData(cafe: Cafe) {
         val defaultCategories = listOf(
             Category("cat_hot", cafe.id, "مشروبات ساخنة", "Hot Drinks", "☕", 1),
-            Category("cat_cold", cafe.id, "مشروبات باردة", "Cold Drinks", "🧋", 2),
-            Category("cat_sweets", cafe.id, "حلويات ومخبوزات", "Desserts & Bakery", "🍰", 3),
-            Category("cat_specialty", cafe.id, "قهوة مختصة V60", "Specialty Coffee", "✨", 4),
-            Category("cat_shisha", cafe.id, "معسلات وشيشة", "Hookah Lounge", "💨", 5)
+            Category("cat_cold", cafe.id, "مشروبات باردة وعصائر", "Cold Drinks", "🧃", 2),
+            Category("cat_sweets", cafe.id, "حلويات ومخبوزات", "Desserts", "🍰", 3),
+            Category("cat_shisha", cafe.id, "أركيلة ومعسلات", "Shisha & Hookah", "💨", 4)
         )
         _categories.value = defaultCategories
 
         val defaultProducts = listOf(
-            Product("p1", cafe.id, "cat_hot", "كابتشينو إيطالي", "Italian Cappuccino", "مزيج متوازن من الإسبريسو الفاخر وحليب مبخر بطبقة رغوة ناعمة", 18.0, true, "☕", 4),
-            Product("p2", cafe.id, "cat_hot", "إسبريسو دبل شوت", "Double Espresso", "خلاصة حبوب البن المحمصة الطازجة بنكهة غنية وقوام مخملي", 14.0, true, "☕", 2),
-            Product("p3", cafe.id, "cat_hot", "فلات وايت كلاسيك", "Flat White", "إسبريسو مكثف مع مايكروفوم حليبي ناعم ودافئ", 19.0, true, "☕", 4),
-            Product("p4", cafe.id, "cat_hot", "شاي كرك بالزعفران", "Karak Tea Saffron", "شاي أسود معتّق مع حليب مبخر وهيل وزعفران أصلي", 12.0, true, "🫖", 3),
-            Product("p5", cafe.id, "cat_cold", "سبانش لاتيه مثلج", "Iced Spanish Latte", "المشروب الأكثر طلباً: حليب مكثف ومحلى مع إسبريسو وثلج", 22.0, true, "🧊", 3),
-            Product("p6", cafe.id, "cat_cold", "آيس أمريكانو منعش", "Iced Americano", "إسبريسو مثلج مع ماء بارد ومذاق نقي خالي من السكر", 16.0, true, "🧊", 2),
-            Product("p7", cafe.id, "cat_cold", "موهيتو توت أزرق بلوبيري", "Blueberry Mojito", "توت بري منعش مع نعناع طازج وليمون ومياه غازية", 24.0, true, "🫐", 3),
-            Product("p8", cafe.id, "cat_sweets", "تشيز كيك سان سيباستيان", "San Sebastian Cheesecake", "تشيز كيك إسباني محروق بقوام كريمي يقدم مع شوكولاتة بلجيكية", 28.0, true, "🍰", 2),
-            Product("p9", cafe.id, "cat_sweets", "كيكة الزعفران الملكية", "Saffron Milk Cake", "كيكة إسفنجية غارقة بحليب الزعفران ومزينة بالكريمة الهشة", 26.0, true, "🥮", 2),
-            Product("p10", cafe.id, "cat_specialty", "قهوة كولومبيا V60", "Colombia V60", "إيحاءات الفواكه الحمضية والشوكولاتة الداكنة بتقطير يدوي فائق الدقة", 25.0, true, "☕", 6),
-            Product("p11", cafe.id, "cat_shisha", "شيشة تفاحتين فاخر", "Double Apple Shisha", "معسل فاخر مميز مع فحم طبيعي وخدمة تغيير الفحم المستمرة", 45.0, true, "💨", 8)
+            Product("p1", cafe.id, "cat_shisha", "أركيلة تفاحتين فاخر", "Double Apple Shisha", "رأس فخاري مجهز بأجود أنواع الفحم الطبيعي", 7000.0, true, "💨", 5),
+            Product("p2", cafe.id, "cat_sweets", "تشيز كيك لوتس دافئ", "Warm Lotus Cheesecake", "طبقة بسكويت مقرمشة مع كريمة جبنة وصوص زبدة اللوتس", 5500.0, true, "🍰", 3),
+            Product("p3", cafe.id, "cat_hot", "شاي عراقي مهيل بالاستكانة", "Iraqi Cardamom Tea", "شاي سيلاني فاخر مخدر على الفحم مع حبات الهيل", 1500.0, true, "🫖", 2),
+            Product("p4", cafe.id, "cat_hot", "قهوة تركي بالهيل", "Turkish Coffee Cardamom", "قهوة تركية محمصة بعناية ومغلية على الرمل مع الهيل", 2750.0, true, "☕", 3),
+            Product("p5", cafe.id, "cat_cold", "موهيتو بلوبيري منعش", "Blueberry Mojito", "توت أزرق منعش مع ليمون ونعناع وصودا مثلجة", 4000.0, true, "🫐", 3),
+            Product("p6", cafe.id, "cat_cold", "عصير برتقال طبيعي فريش", "Fresh Orange Juice", "عصير برتقال طبيعي 100% معصور طازج بدون سكر مضاف", 3500.0, true, "🍊", 3),
+            Product("p7", cafe.id, "cat_cold", "سبانش لاتيه مثلج", "Iced Spanish Latte", "إسبريسو غني مع حليب محلى وثلج منعش", 4500.0, true, "🧊", 3)
         )
         _products.value = defaultProducts
 
@@ -109,8 +104,8 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         val tableList = (1..cafe.totalTables).map { num ->
             TableInfo(
                 tableNumber = num,
-                status = if (num in listOf(2, 5)) TableStatus.OCCUPIED else TableStatus.AVAILABLE,
-                activeOrderId = if (num == 2) "ord_101" else if (num == 5) "ord_102" else null
+                status = if (num in listOf(1, 3)) TableStatus.OCCUPIED else TableStatus.AVAILABLE,
+                activeOrderId = if (num == 1) "ord_101" else if (num == 3) "ord_102" else null
             )
         }
         _tables.value = tableList
@@ -120,49 +115,35 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             Order(
                 id = "ord_101",
                 cafeId = cafe.id,
-                tableNumber = 2,
+                tableNumber = 1,
+                customerName = "علي",
                 items = listOf(
-                    OrderItem("p1", "كابتشينو إيطالي", 18.0, 2, "سكر خفيف"),
-                    OrderItem("p8", "تشيز كيك سان سيباستيان", 28.0, 1, "شوكولاتة إضافية")
+                    OrderItem("p4", "قهوة تركي بالهيل", 2750.0, 1, "سكر مضبوط")
                 ),
-                status = OrderStatus.PREPARING,
-                createdAt = System.currentTimeMillis() - 1000 * 60 * 12,
-                notes = "الرجاء تقديم الكيك أولاً",
-                subtotal = 64.0,
-                vat = 9.6,
-                total = 73.6,
+                status = OrderStatus.PENDING,
+                createdAt = System.currentTimeMillis() - 1000 * 60 * 3,
+                notes = "طاولة الصالة الداخلية",
+                subtotal = 2750.0,
+                vat = 0.0,
+                total = 2750.0,
                 isPaid = false
             ),
             Order(
                 id = "ord_102",
                 cafeId = cafe.id,
-                tableNumber = 5,
-                items = listOf(
-                    OrderItem("p5", "سبانش لاتيه مثلج", 22.0, 1),
-                    OrderItem("p11", "شيشة تفاحتين فاخر", 45.0, 1)
-                ),
-                status = OrderStatus.PENDING,
-                createdAt = System.currentTimeMillis() - 1000 * 60 * 4,
-                notes = "طاولة التراس الخارجي",
-                subtotal = 67.0,
-                vat = 10.05,
-                total = 77.05,
-                isPaid = false
-            ),
-            Order(
-                id = "ord_100",
-                cafeId = cafe.id,
                 tableNumber = 3,
+                customerName = "حيدر",
                 items = listOf(
-                    OrderItem("p2", "إسبريسو دبل شوت", 14.0, 1),
-                    OrderItem("p9", "كيكة الزعفران الملكية", 26.0, 1)
+                    OrderItem("p1", "أركيلة تفاحتين فاخر", 7000.0, 1),
+                    OrderItem("p3", "شاي عراقي مهيل بالاستكانة", 1500.0, 1)
                 ),
-                status = OrderStatus.COMPLETED,
-                createdAt = System.currentTimeMillis() - 1000 * 60 * 45,
-                subtotal = 40.0,
-                vat = 6.0,
-                total = 46.0,
-                isPaid = true
+                status = OrderStatus.PREPARING,
+                createdAt = System.currentTimeMillis() - 1000 * 60 * 15,
+                notes = "مع تغيير الفحم فوراً",
+                subtotal = 8500.0,
+                vat = 0.0,
+                total = 8500.0,
+                isPaid = false
             )
         )
         _orders.value = sampleOrders

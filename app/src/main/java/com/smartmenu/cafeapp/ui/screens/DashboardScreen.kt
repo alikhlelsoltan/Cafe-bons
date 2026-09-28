@@ -4,25 +4,30 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartmenu.cafeapp.data.model.OrderStatus
+import com.smartmenu.cafeapp.data.model.Product
+import com.smartmenu.cafeapp.ui.components.TopNavHeader
+import com.smartmenu.cafeapp.ui.components.TopNavTab
 import com.smartmenu.cafeapp.ui.theme.*
 import com.smartmenu.cafeapp.ui.viewmodel.MainViewModel
 import com.smartmenu.cafeapp.ui.viewmodel.Screen
@@ -32,360 +37,414 @@ fun DashboardScreen(viewModel: MainViewModel) {
     val currentCafe by viewModel.repository.currentCafe.collectAsState()
     val orders by viewModel.repository.orders.collectAsState()
     val products by viewModel.repository.products.collectAsState()
-    val tables by viewModel.repository.tables.collectAsState()
+    val categories by viewModel.repository.categories.collectAsState()
+    val selectedTableNumber by viewModel.customerTableNumber.collectAsState()
 
     val cafe = currentCafe ?: return
 
-    val activeOrdersCount = orders.count { it.status == OrderStatus.PENDING || it.status == OrderStatus.PREPARING }
-    val todayCompletedSales = orders.filter { it.status == OrderStatus.COMPLETED }.sumOf { it.total }
+    val pendingOrdersCount = orders.count { it.status == OrderStatus.PENDING }
+    var selectedCategoryId by remember { mutableStateOf("all") }
+    var showTablePickerSheet by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-            .testTag("dashboard_screen")
-    ) {
-        // Top Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "☕ ${cafe.name}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = GoldPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0x225CB85C), RoundedCornerShape(4.dp))
-                            .border(1.dp, SuccessGreen, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(text = "معتمد", color = SuccessGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0x22F0A500), RoundedCornerShape(4.dp))
-                            .border(1.dp, GoldPrimary, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "اشتراك ${cafe.subscriptionPlan} (ساري حتى ${cafe.subscriptionExpiry})",
-                            color = GoldPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Text(
-                    text = "معرف الكافيه: ${cafe.id}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextGray
-                )
-            }
+    val filteredProducts = remember(selectedCategoryId, products) {
+        if (selectedCategoryId == "all") products else products.filter { it.categoryId == selectedCategoryId }
+    }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { viewModel.logout() },
-                    colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.testTag("logout_btn")
-                ) {
-                    Icon(Icons.Default.ExitToApp, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("خروج", fontSize = 12.sp)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Quick Stats Strip
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            StatCard(
-                title = "مبيعات اليوم",
-                value = "${"%.1f".format(todayCompletedSales)} ${cafe.currency}",
-                icon = Icons.Default.AttachMoney,
-                color = SuccessGreen,
-                modifier = Modifier.weight(1f)
+    Scaffold(
+        topBar = {
+            TopNavHeader(
+                currentTab = TopNavTab.MENU,
+                pendingOrdersCount = pendingOrdersCount,
+                onMenuClick = { /* Already on menu */ },
+                onCashierClick = { viewModel.navigateTo(Screen.ORDERS) },
+                onSettingsClick = { viewModel.navigateTo(Screen.SETTINGS) }
             )
-            StatCard(
-                title = "طلبات نشطة",
-                value = "$activeOrdersCount طلب",
-                icon = Icons.Default.NotificationsActive,
-                color = WarningOrange,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                title = "إجمالي الطاولات",
-                value = "${tables.size} طاولة",
-                icon = Icons.Default.TableRestaurant,
-                color = InfoBlue,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "الوظائف ولوحة التحكم",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = TextWhite,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        // 2-Column Grid of Functional Dash Cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            DashboardActionCard(
-                title = "الأقسام والمنتجات",
-                subtitle = "${products.size} صنف متوفر",
-                iconText = "📂",
-                modifier = Modifier.weight(1f),
-                testTag = "dash_categories_products_card",
-                onClick = { viewModel.navigateTo(Screen.CATEGORIES_PRODUCTS) }
-            )
-            DashboardActionCard(
-                title = "باركود الطاولات (PDF)",
-                subtitle = "توليد وطباعة QR الطاولات",
-                iconText = "🪑",
-                modifier = Modifier.weight(1f),
-                testTag = "dash_tables_qr_card",
-                onClick = { viewModel.navigateTo(Screen.TABLES_QR) }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            DashboardActionCard(
-                title = "الطلبات والكاشير",
-                subtitle = "بونات الطلب والتحضير",
-                iconText = "🔔",
-                badgeCount = if (activeOrdersCount > 0) activeOrdersCount else null,
-                modifier = Modifier.weight(1f),
-                testTag = "dash_orders_card",
-                onClick = { viewModel.navigateTo(Screen.ORDERS) }
-            )
-            DashboardActionCard(
-                title = "إعدادات الكافيه",
-                subtitle = "الضريبة، الشعار، والواي فاي",
-                iconText = "⚙️",
-                modifier = Modifier.weight(1f),
-                testTag = "dash_settings_card",
-                onClick = { viewModel.navigateTo(Screen.SETTINGS) }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Full-width Feature Card: Customer Interactive Preview
-        Card(
+        },
+        containerColor = DarkBackground
+    ) { padding ->
+        LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.navigateTo(Screen.CUSTOMER_PREVIEW) }
-                .testTag("dash_customer_preview_card"),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF222B22)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen)
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            // Table Selector Pill: [ طاولة #1 (تغيير) ⚑ ▼ ]
+            item {
                 Box(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .background(Color(0xFF2E3D2E), RoundedCornerShape(12.dp)),
+                    modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("📱", fontSize = 26.sp)
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "معاينة منيو الزبون المباشر",
-                            fontWeight = FontWeight.Bold,
-                            color = TextWhite,
-                            fontSize = 15.sp
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF222224))
+                            .border(1.dp, Color(0xFF333333), RoundedCornerShape(20.dp))
+                            .clickable { showTablePickerSheet = true }
+                            .padding(horizontal = 16.dp, vertical = 7.dp)
+                            .testTag("table_selector_pill"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = GoldPrimary,
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .background(SuccessGreen, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        Text(
+                            text = "طاولة #$selectedTableNumber (تغيير)",
+                            color = TextWhite,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = TextGray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // Promotional Banner Card (عروض وجديد)
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("promo_banner_card"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66F0A500))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color(0xFF2A2013), Color(0xFF1A1612))
+                                )
+                            )
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("تفاعلي", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            // Left Tag Icon Box
+                            Box(
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(Color(0xFF221C14))
+                                    .border(1.dp, Color(0x55F0A500), RoundedCornerShape(14.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalOffer,
+                                    contentDescription = null,
+                                    tint = GoldPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            // Right Text Details
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                // Badges
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFFEF4444), RoundedCornerShape(12.dp))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(
+                                            text = "🔥 تخفيضات نشطة 3",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0x33F0A500), RoundedCornerShape(12.dp))
+                                            .border(1.dp, Color(0x66F0A500), RoundedCornerShape(12.dp))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(
+                                            text = "✨ عروض وجديد",
+                                            color = GoldPrimary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "اطلع على الإضافات الجديدة والعروض والتخفيضات",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = TextWhite,
+                                    textAlign = TextAlign.End
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "أشهى النكهات المضافة حديثاً وأقوى الخصومات • اضغط للتصفح",
+                                    fontSize = 11.sp,
+                                    color = TextGray,
+                                    textAlign = TextAlign.End
+                                )
+                            }
                         }
                     }
-                    Text(
-                        text = "جرب تجربة الزبون عند مسح كود الطاولة والطلب إلى الكاشير فوراً",
-                        color = TextGray,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
+            }
 
-                Icon(
-                    Icons.Default.ArrowBack,
-                    contentDescription = null,
-                    tint = SuccessGreen,
-                    modifier = Modifier.size(20.dp)
+            // Categories Horizontal Chips
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    item {
+                        val isAllSelected = selectedCategoryId == "all"
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(if (isAllSelected) GoldPrimary else Color(0xFF1E1E1E))
+                                .border(1.dp, if (isAllSelected) GoldPrimary else Color(0xFF2C2C2E), RoundedCornerShape(18.dp))
+                                .clickable { selectedCategoryId = "all" }
+                                .padding(horizontal = 18.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "الكل",
+                                color = if (isAllSelected) Color.Black else TextWhite,
+                                fontSize = 13.sp,
+                                fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    items(categories) { cat ->
+                        val isSelected = selectedCategoryId == cat.id
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(if (isSelected) GoldPrimary else Color(0xFF1E1E1E))
+                                .border(1.dp, if (isSelected) GoldPrimary else Color(0xFF2C2C2E), RoundedCornerShape(18.dp))
+                                .clickable { selectedCategoryId = cat.id }
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(cat.iconEmoji, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = cat.nameArabic,
+                                color = if (isSelected) Color.Black else TextWhite,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Products List (Matching Screenshot 1)
+            items(filteredProducts) { product ->
+                ProductItemCard(
+                    product = product,
+                    currency = cafe.currency,
+                    onOrderClick = {
+                        viewModel.quickOrderProduct(product, selectedTableNumber)
+                    }
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // System Info Footer
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "بيئة النظام والربط السحابي",
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextWhite,
-                        fontSize = 13.sp
-                    )
-                    Text(
-                        text = "GitHub Pages: alikhlelsoltan.github.io/Cafe-bons | Firebase: cafe-bons",
-                        color = TextMuted,
-                        fontSize = 11.sp
-                    )
-                }
-
-                TextButton(
-                    onClick = { viewModel.navigateTo(Screen.SUPER_ADMIN) },
-                    modifier = Modifier.testTag("dash_super_admin_btn")
-                ) {
-                    Text("المشرف العام", color = GoldPrimary, fontSize = 12.sp)
-                }
+            item {
+                Spacer(modifier = Modifier.height(30.dp))
             }
         }
+    }
+
+    // Table Selection Dialog
+    if (showTablePickerSheet) {
+        AlertDialog(
+            onDismissRequest = { showTablePickerSheet = false },
+            title = {
+                Text(
+                    text = "اختر رقم الطاولة للطلب",
+                    fontWeight = FontWeight.Bold,
+                    color = GoldPrimary,
+                    fontSize = 17.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val rows = (1..cafe.totalTables).chunked(4)
+                    rows.forEach { rowTables ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowTables.forEach { tableNum ->
+                                val isSelected = tableNum == selectedTableNumber
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) GoldPrimary else Color(0xFF252528))
+                                        .border(1.dp, if (isSelected) GoldPrimary else Color(0xFF333333), RoundedCornerShape(10.dp))
+                                        .clickable {
+                                            viewModel.setCustomerTableNumber(tableNum)
+                                            showTablePickerSheet = false
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "#$tableNum",
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) Color.Black else TextWhite,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showTablePickerSheet = false }) {
+                    Text("إغلاق", color = TextGray)
+                }
+            },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(18.dp)
+        )
     }
 }
 
 @Composable
-private fun StatCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
+fun ProductItemCard(
+    product: Product,
+    currency: String,
+    onOrderClick: () -> Unit
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("product_card_${product.id}"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1C1C1E)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2C2C2E))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, fontWeight = FontWeight.Bold, color = TextWhite, fontSize = 14.sp)
-            Text(text = title, color = TextGray, fontSize = 11.sp)
-        }
-    }
-}
-
-@Composable
-private fun DashboardActionCard(
-    title: String,
-    subtitle: String,
-    iconText: String,
-    modifier: Modifier = Modifier,
-    badgeCount: Int? = null,
-    testTag: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .clickable { onClick() }
-            .testTag(testTag),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkCard),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
-    ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+            // Left Action & Icon Column
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(text = iconText, fontSize = 32.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    color = TextWhite,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = subtitle,
-                    color = TextGray,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-
-            if (badgeCount != null && badgeCount > 0) {
+                // Square Icon Box
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(22.dp)
-                        .background(WarningOrange, RoundedCornerShape(11.dp)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF242426))
+                        .border(1.dp, Color(0xFF2F2F32), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "$badgeCount",
-                        color = Color.Black,
-                        fontSize = 11.sp,
+                        text = product.iconEmoji,
+                        fontSize = 28.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // + اوردر Button
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF242426))
+                        .border(1.dp, GoldPrimary, RoundedCornerShape(8.dp))
+                        .clickable { onOrderClick() }
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .testTag("btn_order_${product.id}"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "+ اوردر",
+                        color = GoldPrimary,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Right Product Details
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = product.nameArabic,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = TextWhite,
+                    textAlign = TextAlign.End
+                )
+
+                if (product.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = product.description,
+                        fontSize = 12.sp,
+                        color = TextGray,
+                        textAlign = TextAlign.End,
+                        lineHeight = 16.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val formattedPrice = "%,d".format(product.price.toInt())
+                Text(
+                    text = "$formattedPrice $currency",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = GoldPrimary,
+                    textAlign = TextAlign.End
+                )
             }
         }
     }

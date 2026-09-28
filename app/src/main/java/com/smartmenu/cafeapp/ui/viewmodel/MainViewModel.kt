@@ -144,8 +144,27 @@ class MainViewModel(
         _selectedOrderForBon.value = order
     }
 
+    fun updateOrderStatus(orderId: String, newStatus: OrderStatus) {
+        repository.updateOrderStatus(orderId, newStatus)
+    }
+
     fun setCustomerTableNumber(num: Int) {
         _customerTableNumber.value = num
+    }
+
+    fun quickOrderProduct(product: Product, tableNumber: Int) {
+        val item = OrderItem(
+            productId = product.id,
+            nameArabic = product.nameArabic,
+            price = product.price,
+            quantity = 1
+        )
+        repository.placeCustomerOrder(
+            tableNumber = tableNumber,
+            items = listOf(item),
+            notes = ""
+        )
+        _toastMessage.value = "تم إرسال (+ اوردر) ${product.nameArabic} لطاولة #$tableNumber بنجاح!"
     }
 
     fun setCustomerNotes(notes: String) {
