@@ -133,6 +133,20 @@ fun AuthScreen(viewModel: MainViewModel) {
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
+                        onClick = { viewModel.checkPendingApproval() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("check_approval_status_btn"),
+                        colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("التحقق من اعتماد الحساب 🔄", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
                         onClick = { viewModel.showPendingView(false) },
                         modifier = Modifier
                             .fillMaxWidth()

@@ -150,6 +150,23 @@ class MainViewModel(
         }
     }
 
+    fun checkPendingApproval() {
+        viewModelScope.launch {
+            repository.fetchCafesFromFirebase()
+            val approved = repository.cafes.value.find { it.status == "approved" }
+            val pending = repository.cafes.value.find { it.status == "pending" }
+            if (pending == null && approved != null) {
+                repository.setCurrentCafe(approved)
+                _isPendingView.value = false
+                _authError.value = null
+                _currentScreen.value = Screen.DASHBOARD
+                _toastMessage.value = "تهانينا! تم اعتماد وتفعيل حسابك بنجاح."
+            } else {
+                _toastMessage.value = "الطلب ما زال قيد المراجعة في لوحة تحكم المطور."
+            }
+        }
+    }
+
     fun logout() {
         repository.setCurrentCafe(null)
         _screenStack.clear()

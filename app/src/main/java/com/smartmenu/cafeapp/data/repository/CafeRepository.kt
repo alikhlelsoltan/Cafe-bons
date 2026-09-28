@@ -38,6 +38,9 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
 
     init {
         seedInitialData()
+        CoroutineScope(Dispatchers.IO).launch {
+            fetchCafesFromFirebase()
+        }
     }
 
     private fun seedInitialData() {
@@ -180,6 +183,11 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     }
 
     suspend fun loginCafe(emailOrId: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        // Fetch latest approvals and statuses from Firestore first
+        try {
+            fetchCafesFromFirebase()
+        } catch (e: Exception) {}
+
         val query = emailOrId.lowercase().trim()
         val found = _cafes.value.find { 
             it.email.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true)
@@ -206,6 +214,10 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     }
 
     suspend fun loginWithGoogle(email: String, displayName: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        try {
+            fetchCafesFromFirebase()
+        } catch (e: Exception) {}
+
         val cleanEmail = email.trim().lowercase()
         var found = _cafes.value.find { it.email.equals(cleanEmail, ignoreCase = true) }
 
@@ -375,28 +387,87 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         return newOrder
     }
 
+    suspend fun fetchCafesFromFirebase() = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            if (conn.responseCode == 200) {
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
+                val rootJson = JSONObject(responseText)
+                if (rootJson.has("documents")) {
+                    val docs = rootJson.getJSONArray("documents")
+                    val fetchedList = mutableListOf<Cafe>()
+                    for (i in 0 until docs.length()) {
+                        val doc = docs.getJSONObject(i)
+                        val fields = doc.optJSONObject("fields") ?: continue
+                        val id = fields.optJSONObject("cafeId")?.optString("stringValue")
+                            ?: doc.optString("name").substringAfterLast("/")
+                        val name = fields.optJSONObject("cafeName")?.optString("stringValue") ?: "كافيه"
+                        val email = fields.optJSONObject("email")?.optString("stringValue") ?: ""
+                        val password = fields.optJSONObject("password")?.optString("stringValue") ?: "123456"
+                        val status = fields.optJSONObject("status")?.optString("stringValue") ?: "pending"
+                        val createdAt = fields.optJSONObject("createdAt")?.optString("stringValue") ?: ""
+                        val phone = fields.optJSONObject("phone")?.optString("stringValue") ?: ""
+
+                        fetchedList.add(
+                            Cafe(
+                                id = id,
+                                name = name,
+                                email = email,
+                                password = password,
+                                status = status,
+                                createdAt = createdAt,
+                                phone = phone
+                            )
+                        )
+                    }
+                    if (fetchedList.isNotEmpty()) {
+                        val fetchedIds = fetchedList.map { it.id }.toSet()
+                        val unreplaced = _cafes.value.filter { it.id !in fetchedIds }
+                        _cafes.value = fetchedList + unreplaced
+                    }
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            // Ignore offline fallback
+        }
+    }
+
     private fun syncCafeToFirebase(cafe: Cafe) {
         val firestoreUrl = "https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafe.id}"
         val url = URL(firestoreUrl)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "PATCH"
-            setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("Content-Type", "application/json; charset=UTF-8")
             doOutput = true
-            connectTimeout = 4000
-            readTimeout = 4000
+            connectTimeout = 6000
+            readTimeout = 6000
         }
 
         val jsonFields = JSONObject().apply {
             put("fields", JSONObject().apply {
                 put("cafeName", JSONObject().put("stringValue", cafe.name))
                 put("cafeId", JSONObject().put("stringValue", cafe.id))
+                put("email", JSONObject().put("stringValue", cafe.email))
                 put("password", JSONObject().put("stringValue", cafe.password))
                 put("status", JSONObject().put("stringValue", cafe.status))
                 put("createdAt", JSONObject().put("stringValue", cafe.createdAt))
+                put("phone", JSONObject().put("stringValue", cafe.phone))
+                put("plan", JSONObject().put("stringValue", "trial_14"))
+                put("planName", JSONObject().put("stringValue", "تجريبي (14 يوم)"))
+                val expCal = java.util.Calendar.getInstance()
+                expCal.add(java.util.Calendar.DAY_OF_YEAR, 14)
+                val expDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(expCal.time)
+                put("expiryDate", JSONObject().put("stringValue", expDate))
             })
         }
 
-        OutputStreamWriter(conn.outputStream).use { writer ->
+        OutputStreamWriter(conn.outputStream, "UTF-8").use { writer ->
             writer.write(jsonFields.toString())
             writer.flush()
         }
