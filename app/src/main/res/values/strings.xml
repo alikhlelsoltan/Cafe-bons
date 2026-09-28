@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cafe Bons - Smart Menu</string>
+    <string name="app_tagline">نظام إدارة الكافيهات وقوائم الطعام الذكية</string>
+    <string name="package_name_info">معرف الحزمة: com.smartmenu.cafeapp</string>
+    <string name="login_title">تسجيل الدخول</string>
+    <string name="register_title">إنشاء حساب كافيه</string>
+    <string name="cafe_id_label">معرف الكافيه (Cafe ID)</string>
+    <string name="cafe_id_placeholder">مثال: my-cafe</string>
+    <string name="password_label">كلمة المرور</string>
+    <string name="cafe_name_label">اسم الكافيه</string>
+    <string name="cafe_name_placeholder">كافيه البستان</string>
+    <string name="login_button">دخول لوحة التحكم</string>
+    <string name="register_button">إرسال طلب التسجيل</string>
+    <string name="pending_title">⏳ الطلب قيد المراجعة</string>
+    <string name="pending_message">تم إرسال طلبك بنجاح! حسابك قيد المراجعة وبانتظار موافقة الأدمن لتفعيل لوحة التحكم والمنيو الخاص بك.</string>
+    <string name="back_to_login">العودة لتسجيل الدخول</string>
+    <string name="owner_dashboard">لوحة التحكم</string>
+    <string name="logout">خروج</string>
+    <string name="menu_categories_products">الأقسام والمنتجات</string>
+    <string name="qr_tables_pdf">باركود الطاولات (QR &amp; PDF)</string>
+    <string name="cafe_settings">إعدادات الكافيه</string>
+    <string name="orders_prep">الطلبات والكاشير</string>
+    <string name="customer_preview">معاينة منيو الزبون</string>
+    <string name="super_admin_panel">لوحة المشرف العام</string>
+</resources>

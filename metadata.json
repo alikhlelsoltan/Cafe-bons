@@ -1,0 +1,8 @@
+{
+  "name": "Cafe Bons - Smart Menu",
+  "description": "Multi-tenant Smart Menu & Cafe Management System with QR table ordering, digital menu, real-time orders, and table management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
