@@ -44,6 +44,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         val bustanCafe = Cafe(
             id = "bustan-cafe",
             name = "كافيه البستان",
+            email = "alikhlel132@gmail.com",
             password = "123",
             status = "approved",
             createdAt = "2026-09-01",
@@ -59,6 +60,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         val jasmineCafe = Cafe(
             id = "jasmine-cafe",
             name = "مقهى الياسمين",
+            email = "jasmine@cafe.com",
             password = "123",
             status = "pending",
             createdAt = "2026-09-25",
@@ -149,17 +151,23 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         _orders.value = sampleOrders
     }
 
-    suspend fun registerCafe(name: String, slug: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
+    suspend fun registerCafe(name: String, email: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        val cleanEmail = email.trim().lowercase()
+        val derivedSlug = cleanEmail.substringBefore("@")
+            .replace("[^a-zA-Z0-9-]".toRegex(), "")
+            .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
+
         val newCafe = Cafe(
-            id = slug.lowercase().trim(),
+            id = derivedSlug,
             name = name.trim(),
+            email = cleanEmail,
             password = pass,
             status = "pending",
             createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
         )
 
         // Save locally
-        _cafes.value = _cafes.value.filter { it.id != newCafe.id } + newCafe
+        _cafes.value = _cafes.value.filter { it.id != newCafe.id && it.email != newCafe.email } + newCafe
 
         // Sync with Firebase Firestore REST API for cafe-bons
         try {
@@ -171,16 +179,56 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
         Result.success(newCafe)
     }
 
-    suspend fun loginCafe(cafeId: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
-        val id = cafeId.lowercase().trim()
-        val found = _cafes.value.find { it.id == id }
-
-        if (found == null) {
-            return@withContext Result.failure(Exception("لم يتم العثور على هذا الكافيه!"))
+    suspend fun loginCafe(emailOrId: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        val query = emailOrId.lowercase().trim()
+        val found = _cafes.value.find { 
+            it.email.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true)
         }
 
-        if (found.password != pass) {
+        if (found == null) {
+            return@withContext Result.failure(Exception("لم يتم العثور على حساب مرتبط بهذا البريد أو المعرف!"))
+        }
+
+        if (found.password.isNotBlank() && found.password != pass) {
             return@withContext Result.failure(Exception("كلمة المرور غير صحيحة!"))
+        }
+
+        if (found.status == "suspended") {
+            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
+        }
+
+        if (found.status != "approved") {
+            return@withContext Result.failure(Exception("PENDING_APPROVAL"))
+        }
+
+        setCurrentCafe(found)
+        Result.success(found)
+    }
+
+    suspend fun loginWithGoogle(email: String, displayName: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        val cleanEmail = email.trim().lowercase()
+        var found = _cafes.value.find { it.email.equals(cleanEmail, ignoreCase = true) }
+
+        if (found == null) {
+            // Automatically register new cafe for this Google account
+            val derivedSlug = cleanEmail.substringBefore("@")
+                .replace("[^a-zA-Z0-9-]".toRegex(), "")
+                .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
+
+            val cafeName = displayName.ifBlank { "كافيه ${cleanEmail.substringBefore("@")}" }
+            val newCafe = Cafe(
+                id = derivedSlug,
+                name = cafeName,
+                email = cleanEmail,
+                password = "google_authenticated",
+                status = "approved", // Quick Google login approved
+                createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+            )
+            _cafes.value = _cafes.value + newCafe
+            try {
+                syncCafeToFirebase(newCafe)
+            } catch (e: Exception) {}
+            found = newCafe
         }
 
         if (found.status == "suspended") {

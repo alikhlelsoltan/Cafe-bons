@@ -493,7 +493,8 @@
       {
         id: 'bustan-cafe',
         name: 'كافيه البستان',
-        phone: '+966 50 123 4567',
+        email: 'alikhlel132@gmail.com',
+        phone: '+964 770 123 4567',
         password: '123',
         status: 'approved',
         plan: 'yearly',
@@ -504,7 +505,8 @@
       {
         id: 'jasmine-cafe',
         name: 'مقهى الياسمين',
-        phone: '+966 55 987 6543',
+        email: 'jasmine@cafe.com',
+        phone: '+964 771 987 6543',
         password: '123',
         status: 'pending',
         plan: 'trial_14',
@@ -593,6 +595,7 @@
                 <span class="cafe-slug">id: ${cafe.id}</span>
               </h3>
               <div class="cafe-meta">
+                <span>📧 البريد: ${cafe.email || cafe.id + '@cafe.com'}</span>
                 <span>📞 ${cafe.phone || 'غير مسجل'}</span>
                 <span>🔑 كلمة المرور: ${cafe.password}</span>
                 <span>📅 تاريخ التسجيل: ${cafe.createdAt}</span>

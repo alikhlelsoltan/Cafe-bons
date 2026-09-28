@@ -3,7 +3,8 @@ package com.smartmenu.cafeapp.data.model
 data class Cafe(
     val id: String,
     val name: String,
-    val password: String,
+    val email: String = "",
+    val password: String = "",
     val status: String = "approved", // "pending", "approved", "rejected", "suspended"
     val createdAt: String = "",
     val phone: String = "+966 50 123 4567",

@@ -89,13 +89,13 @@ class MainViewModel(
         _isPendingView.value = show
     }
 
-    fun login(cafeId: String, pass: String) {
-        if (cafeId.isBlank() || pass.isBlank()) {
-            _authError.value = "الرجاء إدخال المعرف وكلمة المرور"
+    fun login(emailOrId: String, pass: String) {
+        if (emailOrId.isBlank() || pass.isBlank()) {
+            _authError.value = "الرجاء إدخال البريد الإلكتروني وكلمة المرور"
             return
         }
         viewModelScope.launch {
-            val result = repository.loginCafe(cafeId, pass)
+            val result = repository.loginCafe(emailOrId, pass)
             result.onSuccess {
                 _authError.value = null
                 _isPendingView.value = false
@@ -105,7 +105,7 @@ class MainViewModel(
                     _isPendingView.value = true
                     _authError.value = null
                 } else if (err.message == "SUSPENDED_ACCOUNT") {
-                    _authError.value = "⛔ اشتراك هذا الكافيه موقوف أو منتهي! يرجى مراجعة إدارة المنظومة للتجديد."
+                    _authError.value = "⛔ اشتراك هذا الكافيه موقوف أو منتهي! يرجى مراجعة إدارة المنظومة عبر لوحة المطور للتجديد."
                 } else {
                     _authError.value = err.message ?: "خطأ في تسجيل الدخول"
                 }
@@ -113,13 +113,34 @@ class MainViewModel(
         }
     }
 
-    fun register(name: String, slug: String, pass: String) {
-        if (name.isBlank() || slug.isBlank() || pass.isBlank()) {
-            _authError.value = "الرجاء تعبئة كافة الحقول المطلوبة"
+    fun loginWithGoogle(email: String = "alikhlel132@gmail.com", displayName: String = "كافيه البستان") {
+        viewModelScope.launch {
+            val result = repository.loginWithGoogle(email, displayName)
+            result.onSuccess {
+                _authError.value = null
+                _isPendingView.value = false
+                _currentScreen.value = Screen.DASHBOARD
+                _toastMessage.value = "مرحباً بك! تم تسجيل الدخول بنجاح عبر حساب Google ($email)"
+            }.onFailure { err ->
+                if (err.message == "PENDING_APPROVAL") {
+                    _isPendingView.value = true
+                    _authError.value = null
+                } else if (err.message == "SUSPENDED_ACCOUNT") {
+                    _authError.value = "⛔ اشتراك هذا الكافيه موقوف أو منتهي! يرجى التواصل مع إدارة النظام للتجديد."
+                } else {
+                    _authError.value = err.message ?: "فشل تسجيل الدخول عبر Google"
+                }
+            }
+        }
+    }
+
+    fun register(name: String, email: String, pass: String) {
+        if (name.isBlank() || email.isBlank() || pass.isBlank()) {
+            _authError.value = "الرجاء تعبئة اسم الكافيه والبريد الإلكتروني وكلمة المرور"
             return
         }
         viewModelScope.launch {
-            val result = repository.registerCafe(name, slug, pass)
+            val result = repository.registerCafe(name, email, pass)
             result.onSuccess {
                 _authError.value = null
                 _isPendingView.value = true

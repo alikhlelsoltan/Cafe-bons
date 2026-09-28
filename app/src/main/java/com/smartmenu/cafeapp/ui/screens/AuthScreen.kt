@@ -5,18 +5,19 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Store
-import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.smartmenu.cafeapp.ui.theme.*
 import com.smartmenu.cafeapp.ui.viewmodel.AuthTab
 import com.smartmenu.cafeapp.ui.viewmodel.MainViewModel
-import com.smartmenu.cafeapp.ui.viewmodel.Screen
 
 @Composable
 fun AuthScreen(viewModel: MainViewModel) {
@@ -36,11 +36,11 @@ fun AuthScreen(viewModel: MainViewModel) {
     val isPendingView by viewModel.isPendingView.collectAsState()
     val authError by viewModel.authError.collectAsState()
 
-    var loginCafeId by remember { mutableStateOf("bustan-cafe") }
+    var loginEmail by remember { mutableStateOf("alikhlel132@gmail.com") }
     var loginPassword by remember { mutableStateOf("123") }
 
     var regName by remember { mutableStateOf("") }
-    var regSlug by remember { mutableStateOf("") }
+    var regEmail by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
 
     Box(
@@ -66,7 +66,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo Box
+                // Cafe Logo
                 Box(
                     modifier = Modifier
                         .size(76.dp)
@@ -88,18 +88,11 @@ fun AuthScreen(viewModel: MainViewModel) {
                 )
 
                 Text(
-                    text = "معرف الحزمة: com.smartmenu.cafeapp",
+                    text = "Firebase Auth & Firestore: cafe-bons",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextGray,
+                    color = GoldSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp)
-                )
-
-                Text(
-                    text = "Firebase Project: cafe-bons",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = GoldSecondary,
-                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -112,32 +105,32 @@ fun AuthScreen(viewModel: MainViewModel) {
                             .testTag("pending_approval_view"),
                         colors = CardDefaults.cardColors(containerColor = Color(0x22F0A500)),
                         border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "⏳ تم إرسال طلبك بنجاح!",
+                                text = "⏳ تم استلام طلبك بنجاح!",
                                 fontWeight = FontWeight.Bold,
                                 color = GoldPrimary,
-                                fontSize = 16.sp
+                                fontSize = 17.sp
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "حسابك الآن قيد المراجعة وبانتظار موافقة الأدمن لتفعيل لوحة التحكم والمنيو الخاص بك.",
+                                text = "حساب الكافيه الآن قيد المراجعة. سيقوم مطور النظام باعتماد حسابك وتفعيله عبر لوحة تحكم المطور السحابية، وستتمكن من الدخول مباشرة فور الموافقة.",
                                 color = TextWhite,
                                 fontSize = 13.sp,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 18.sp
+                                lineHeight = 19.sp
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
                         onClick = { viewModel.showPendingView(false) },
@@ -146,21 +139,10 @@ fun AuthScreen(viewModel: MainViewModel) {
                             .height(48.dp)
                             .testTag("back_to_login_btn"),
                         colors = ButtonDefaults.buttonColors(containerColor = DarkCard),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))
                     ) {
-                        Text("العودة لتسجيل الدخول", color = TextWhite)
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Shortcut to Super Admin for convenience in reviewing/approving
-                    TextButton(
-                        onClick = { viewModel.navigateTo(Screen.SUPER_ADMIN) },
-                        modifier = Modifier.testTag("admin_shortcut_btn")
-                    ) {
-                        Icon(Icons.Default.SupervisorAccount, contentDescription = null, tint = GoldPrimary, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("لوحة موافقة المشرف (Super Admin)", color = GoldPrimary, fontSize = 12.sp)
+                        Text("العودة لتسجيل الدخول", color = TextWhite, fontWeight = FontWeight.Bold)
                     }
 
                 } else {
@@ -219,16 +201,16 @@ fun AuthScreen(viewModel: MainViewModel) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 14.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0x33D9534F)),
                             border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Text(
                                 text = err,
-                                color = Color(0xFFFF8888),
+                                color = Color(0xFFFF9999),
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(10.dp),
+                                modifier = Modifier.padding(12.dp),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -238,19 +220,20 @@ fun AuthScreen(viewModel: MainViewModel) {
                         // Login Form
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "معرف الكافيه (Cafe ID)",
+                                text = "البريد الإلكتروني",
                                 color = TextGray,
                                 fontSize = 13.sp,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
                             OutlinedTextField(
-                                value = loginCafeId,
-                                onValueChange = { loginCafeId = it },
-                                placeholder = { Text("مثال: bustan-cafe", color = TextMuted) },
-                                leadingIcon = { Icon(Icons.Default.Store, contentDescription = null, tint = GoldPrimary) },
+                                value = loginEmail,
+                                onValueChange = { loginEmail = it },
+                                placeholder = { Text("مثال: owner@cafe.com", color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = GoldPrimary) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .testTag("login_cafe_id_input"),
+                                    .testTag("login_email_input"),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = GoldPrimary,
                                     unfocusedBorderColor = DarkBorder,
@@ -296,7 +279,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.height(20.dp))
 
                             Button(
-                                onClick = { viewModel.login(loginCafeId, loginPassword) },
+                                onClick = { viewModel.login(loginEmail, loginPassword) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
@@ -312,14 +295,35 @@ fun AuthScreen(viewModel: MainViewModel) {
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                            Text(
-                                text = "حساب تجريبي مسبق معتمد: bustan-cafe / 123",
-                                fontSize = 12.sp,
-                                color = TextMuted,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
+                            // Or Divider
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2C2C2E))
+                                Text(
+                                    text = "أو",
+                                    color = TextGray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2C2C2E))
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Google Sign-In Button
+                            GoogleSignInButton(
+                                text = "الدخول السريع بواسطة Google",
+                                onClick = {
+                                    viewModel.loginWithGoogle(
+                                        email = loginEmail.ifBlank { "alikhlel132@gmail.com" },
+                                        displayName = "كافيه البستان"
+                                    )
+                                },
+                                testTag = "google_login_btn"
                             )
                         }
                     } else {
@@ -335,6 +339,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                                 value = regName,
                                 onValueChange = { regName = it },
                                 placeholder = { Text("مثال: كافيه الروشة", color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.Store, contentDescription = null, tint = GoldPrimary) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("reg_name_input"),
@@ -353,18 +358,20 @@ fun AuthScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = "معرف فريد بالإنجليزية (Cafe ID)",
+                                text = "البريد الإلكتروني",
                                 color = TextGray,
                                 fontSize = 13.sp,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
                             OutlinedTextField(
-                                value = regSlug,
-                                onValueChange = { regSlug = it },
-                                placeholder = { Text("مثال: rawsheh-cafe", color = TextMuted) },
+                                value = regEmail,
+                                onValueChange = { regEmail = it },
+                                placeholder = { Text("مثال: owner@gmail.com", color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = GoldPrimary) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .testTag("reg_slug_input"),
+                                    .testTag("reg_email_input"),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = GoldPrimary,
                                     unfocusedBorderColor = DarkBorder,
@@ -389,6 +396,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                                 value = regPassword,
                                 onValueChange = { regPassword = it },
                                 placeholder = { Text("اختر كلمة مرور قوية", color = TextMuted) },
+                                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = GoldPrimary) },
                                 visualTransformation = PasswordVisualTransformation(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 modifier = Modifier
@@ -409,7 +417,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.height(20.dp))
 
                             Button(
-                                onClick = { viewModel.register(regName, regSlug, regPassword) },
+                                onClick = { viewModel.register(regName, regEmail, regPassword) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
@@ -424,31 +432,91 @@ fun AuthScreen(viewModel: MainViewModel) {
                                     fontSize = 15.sp
                                 )
                             }
-                        }
-                    }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                    Divider(color = DarkBorder)
+                            // Or Divider
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2C2C2E))
+                                Text(
+                                    text = "أو",
+                                    color = TextGray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFF2C2C2E))
+                            }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(
-                            onClick = { viewModel.navigateTo(Screen.SUPER_ADMIN) },
-                            modifier = Modifier.testTag("nav_super_admin_btn")
-                        ) {
-                            Icon(Icons.Default.SupervisorAccount, contentDescription = null, tint = GoldSecondary, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("لوحة إدارة المشرف العام (Approvals)", color = GoldSecondary, fontSize = 12.sp)
+                            // Google Sign-Up Button
+                            GoogleSignInButton(
+                                text = "التسجيل السريع بواسطة Google",
+                                onClick = {
+                                    val email = regEmail.ifBlank { "alikhlel132@gmail.com" }
+                                    val name = regName.ifBlank { "كافيه ${email.substringBefore("@")}" }
+                                    viewModel.loginWithGoogle(email = email, displayName = name)
+                                },
+                                testTag = "google_register_btn"
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun GoogleSignInButton(
+    text: String,
+    onClick: () -> Unit,
+    testTag: String
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable { onClick() }
+            .testTag(testTag),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF242426)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38383A))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            // Google "G" Badge
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "G",
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF4285F4),
+                    fontSize = 15.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Text(
+                text = text,
+                color = TextWhite,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
