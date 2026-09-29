@@ -36,7 +36,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     private val _tables = MutableStateFlow<List<TableInfo>>(emptyList())
     val tables: StateFlow<List<TableInfo>> = _tables.asStateFlow()
 
-    private var webApiKey: String = ""
+    private var webApiKey: String = "AIzaSyAJ5lYgz7GGUkUNMU2LJFqB1WoR09Ipgjg"
 
     init {
         seedInitialData()
