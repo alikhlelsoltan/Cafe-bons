@@ -6,6 +6,8 @@ data class Cafe(
     val email: String = "",
     val password: String = "",
     val status: String = "approved", // "pending", "approved", "rejected", "suspended"
+    val emailVerified: Boolean = true,
+    val verificationCode: String = "",
     val createdAt: String = "",
     val phone: String = "+966 50 123 4567",
     val welcomeMessage: String = "أهلاً وسهلاً بكم في كافيهنا! نتمنى لكم وقتاً ممتعاً",

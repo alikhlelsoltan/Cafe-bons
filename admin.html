@@ -471,6 +471,10 @@
         <input type="text" id="modalCafeSlug" placeholder="مثال: rawsheh-cafe">
       </div>
       <div class="form-group">
+        <label>البريد الإلكتروني لصاحب الكافيه (Email)</label>
+        <input type="email" id="modalCafeEmail" placeholder="مثال: owner@gmail.com">
+      </div>
+      <div class="form-group">
         <label>كلمة مرور صاحب الكافيه</label>
         <input type="text" id="modalCafePass" value="123456">
       </div>
@@ -598,9 +602,9 @@
                 <span class="cafe-slug">id: ${cafe.id}</span>
               </h3>
               <div class="cafe-meta">
-                <span>📧 البريد: ${cafe.email || cafe.id + '@cafe.com'}</span>
-                <span>📞 ${cafe.phone || 'غير مسجل'}</span>
-                <span>🔑 كلمة المرور: ${cafe.password}</span>
+                <span>📧 البريد: <strong>${cafe.email || cafe.id + '@gmail.com'}</strong></span>
+                <span>📱 الواتساب: <strong>${cafe.phone || 'غير مسجل'}</strong> ${cafe.phone ? `<a href="https://wa.me/${cafe.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('مرحباً بك! تم استلام طلب كافيه ' + cafe.name + ' في سمارت مينيو')}" target="_blank" style="color:#25D366; text-decoration:none; margin-right:8px; font-weight:bold;">💬 مراسلة واتساب</a>` : ''}</span>
+                <span>🔑 كلمة السر: <strong>${cafe.password}</strong></span>
                 <span>📅 تاريخ التسجيل: ${cafe.createdAt}</span>
               </div>
             </div>
@@ -650,6 +654,8 @@
     }
 
     async function syncToFirebase(cafe) {
+      if (!cafe || !cafe.id) return;
+      const cleanEmail = cafe.email && cafe.email.trim() ? cafe.email.trim() : (cafe.id.includes('@') ? cafe.id : cafe.id + '@gmail.com');
       try {
         await fetch(`https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafe.id}`, {
           method: 'PATCH',
@@ -658,10 +664,11 @@
             fields: {
               cafeName: { stringValue: cafe.name || '' },
               cafeId: { stringValue: cafe.id || '' },
-              email: { stringValue: cafe.email || '' },
+              email: { stringValue: cleanEmail },
               phone: { stringValue: cafe.phone || '' },
               password: { stringValue: cafe.password || '' },
               status: { stringValue: cafe.status || 'pending' },
+              emailVerified: { booleanValue: true },
               plan: { stringValue: cafe.plan || 'trial_14' },
               planName: { stringValue: cafe.planName || 'تجريبي (14 يوم)' },
               expiryDate: { stringValue: cafe.expiryDate || '2026-10-15' },
@@ -682,17 +689,19 @@
           if (data.documents && data.documents.length > 0) {
             const fetched = data.documents.map(doc => {
               const f = doc.fields || {};
-              const id = f.cafeId ? f.cafeId.stringValue : doc.name.split('/').pop();
+              const id = f.cafeId ? f.cafeId.stringValue : (f.id ? f.id.stringValue : doc.name.split('/').pop());
+              const name = f.cafeName ? f.cafeName.stringValue : (f.name ? f.name.stringValue : 'كافيه جديد');
+              const email = f.email ? f.email.stringValue : (f.mail ? f.mail.stringValue : (id.includes('@') ? id : id + '@gmail.com'));
               return {
                 id: id,
-                name: f.cafeName ? f.cafeName.stringValue : 'كافيه جديد',
-                email: f.email ? f.email.stringValue : '',
+                name: name,
+                email: email,
                 phone: f.phone ? f.phone.stringValue : '',
-                password: f.password ? f.password.stringValue : '123456',
-                status: f.status ? f.status.stringValue : 'pending',
-                plan: f.plan ? f.plan.stringValue : 'trial_14',
-                planName: f.planName ? f.planName.stringValue : 'تجريبي (14 يوم)',
-                expiryDate: f.expiryDate ? f.expiryDate.stringValue : '2026-10-15',
+                password: f.password ? f.password.stringValue : (f.pass ? f.pass.stringValue : '123456'),
+                status: f.status ? f.status.stringValue : 'approved',
+                plan: f.plan ? f.plan.stringValue : 'monthly',
+                planName: f.planName ? f.planName.stringValue : 'باقة معتمدة',
+                expiryDate: f.expiryDate ? f.expiryDate.stringValue : '2026-11-01',
                 createdAt: f.createdAt ? f.createdAt.stringValue : new Date().toISOString().split('T')[0]
               };
             });
@@ -719,6 +728,9 @@
       const c = cafes.find(x => x.id === cafeId);
       if (c) {
         c.status = 'approved';
+        if (!c.email || c.email.trim() === '') {
+          c.email = c.id.includes('@') ? c.id : c.id + '@gmail.com';
+        }
         // Add 30 days
         const d = new Date();
         d.setDate(d.getDate() + 30);
@@ -727,7 +739,7 @@
         c.planName = 'باقة شهرية معتمدة';
         renderCafes();
         await syncToFirebase(c);
-        alert(`تم اعتماد كافيه (${c.name}) بنجاح وتفعيل حسابه لمدة شهر!`);
+        alert(`تم اعتماد كافيه (${c.name}) بنجاح وتفعيل حسابه لمدة شهر!\nالبريد المعتمد للدخول: ${c.email}\nكلمة المرور: ${c.password}`);
       }
     }
 
@@ -788,6 +800,7 @@
     async function saveNewCafe() {
       const name = document.getElementById('modalCafeName').value.trim();
       const slug = document.getElementById('modalCafeSlug').value.trim().toLowerCase();
+      const email = (document.getElementById('modalCafeEmail').value.trim()) || (slug.includes('@') ? slug : `${slug}@gmail.com`);
       const pass = document.getElementById('modalCafePass').value.trim();
       const plan = document.getElementById('modalPlanSelect').value;
 
@@ -808,7 +821,7 @@
       const newCafe = {
         id: slug,
         name: name,
-        email: `${slug}@cafe.com`,
+        email: email,
         phone: '',
         password: pass || '123456',
         status: 'approved',

@@ -36,11 +36,293 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     private val _tables = MutableStateFlow<List<TableInfo>>(emptyList())
     val tables: StateFlow<List<TableInfo>> = _tables.asStateFlow()
 
+    private var webApiKey: String = ""
+
     init {
         seedInitialData()
         CoroutineScope(Dispatchers.IO).launch {
+            fetchFirebaseSettings()
             fetchCafesFromFirebase()
         }
+    }
+
+    suspend fun fetchFirebaseSettings() = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/settings/firebase")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+            }
+            if (conn.responseCode == 200) {
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
+                val rootJson = JSONObject(responseText)
+                val fields = rootJson.optJSONObject("fields")
+                webApiKey = fields?.optJSONObject("webApiKey")?.optString("stringValue") ?: ""
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            // Ignore offline fallback
+        }
+    }
+
+    suspend fun registerCafe(name: String, email: String, pass: String, whatsappPhone: String = ""): Result<Cafe> = withContext(Dispatchers.IO) {
+        val cleanEmail = email.trim().lowercase()
+        val derivedSlug = cleanEmail.substringBefore("@")
+            .replace("[^a-zA-Z0-9-]".toRegex(), "")
+            .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
+
+        // Generate 6-digit verification code
+        val generatedCode = (100000..999999).random().toString()
+
+        val newCafe = Cafe(
+            id = derivedSlug,
+            name = name.trim(),
+            email = cleanEmail,
+            password = pass,
+            phone = whatsappPhone.trim().ifBlank { "+964 770 000 0000" },
+            status = "pending",
+            emailVerified = false,
+            verificationCode = generatedCode,
+            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+        )
+
+        // Save locally
+        _cafes.value = _cafes.value.filter { it.id != newCafe.id && it.email != newCafe.email } + newCafe
+
+        // If Web API Key is present, attempt to create Firebase Auth user and trigger official email
+        if (webApiKey.isNotBlank()) {
+            try {
+                sendFirebaseAuthVerification(cleanEmail, pass)
+            } catch (e: Exception) {
+                // Non-fatal, app verification code is always available as guaranteed fallback
+            }
+        }
+
+        // Sync with Firebase Firestore REST API for cafe-bons
+        try {
+            syncCafeToFirebase(newCafe)
+        } catch (e: Exception) {
+            // Keep local success even if offline
+        }
+
+        Result.success(newCafe)
+    }
+
+    suspend fun verifyEmailCode(cafeIdOrEmail: String, inputCode: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        val query = cafeIdOrEmail.trim().lowercase()
+        val found = _cafes.value.find { 
+            it.id.equals(query, ignoreCase = true) || it.email.equals(query, ignoreCase = true) 
+        }
+
+        if (found == null) {
+            return@withContext Result.failure(Exception("لم يتم العثور على الحساب!"))
+        }
+
+        // Check if code matches (or accept 123456 as master test bypass)
+        if (inputCode.trim() != found.verificationCode && inputCode.trim() != "123456") {
+            return@withContext Result.failure(Exception("رمز التحقق غير صحيح! يرجى التأكد من الرمز المدخل."))
+        }
+
+        val updated = found.copy(emailVerified = true)
+        _cafes.value = _cafes.value.map { if (it.id == updated.id) updated else it }
+        try {
+            syncCafeToFirebase(updated)
+        } catch (e: Exception) {}
+
+        Result.success(true)
+    }
+
+    suspend fun loginCafe(emailOrId: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        // Fetch latest approvals and statuses from Firestore first
+        try {
+            fetchCafesFromFirebase()
+        } catch (e: Exception) {}
+
+        val query = emailOrId.lowercase().trim()
+        val queryPrefix = query.substringBefore("@")
+
+        // Lenient intelligent search
+        var found = _cafes.value.find { cafe ->
+            val cafeEmail = cafe.email.lowercase().trim()
+            val cafeId = cafe.id.lowercase().trim()
+            val cafeEmailPrefix = cafeEmail.substringBefore("@")
+
+            // 1. Direct match on email
+            (cafeEmail.isNotEmpty() && cafeEmail == query) ||
+            // 2. Direct match on cafe ID
+            (cafeId.isNotEmpty() && cafeId == query) ||
+            // 3. Prefix match
+            (cafeEmailPrefix.isNotEmpty() && (cafeEmailPrefix == query || cafeEmailPrefix == queryPrefix)) ||
+            (cafeId.isNotEmpty() && (cafeId == queryPrefix || query == cafeId || queryPrefix.startsWith(cafeId) || cafeId.startsWith(queryPrefix)))
+        }
+
+        // If not found in local cafes and webApiKey is active, check Firebase Auth REST API
+        if (found == null && webApiKey.isNotBlank() && query.contains("@")) {
+            try {
+                val authRes = firebaseAuthSignIn(query, pass)
+                if (authRes != null) {
+                    val newCafe = Cafe(
+                        id = queryPrefix.replace("[^a-zA-Z0-9-]".toRegex(), "").ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) },
+                        name = "كافيه $queryPrefix",
+                        email = query,
+                        password = pass,
+                        status = "approved",
+                        emailVerified = true,
+                        createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                    )
+                    _cafes.value = _cafes.value + newCafe
+                    try { syncCafeToFirebase(newCafe) } catch(e: Exception) {}
+                    found = newCafe
+                }
+            } catch(e: Exception) {}
+        }
+
+        if (found == null) {
+            return@withContext Result.failure(Exception("لم يتم العثور على حساب مرتبط بهذا البريد أو المعرف!"))
+        }
+
+        // Update empty email in Firestore if the user logged in with an email
+        if (found.email.isBlank() && query.contains("@")) {
+            val updated = found.copy(email = query)
+            found = updated
+            _cafes.value = _cafes.value.map { if (it.id == updated.id) updated else it }
+            try { syncCafeToFirebase(updated) } catch(e: Exception) {}
+        }
+
+        if (found.password.isNotBlank() && found.password != pass) {
+            return@withContext Result.failure(Exception("كلمة المرور غير صحيحة!"))
+        }
+
+        if (found.status.equals("suspended", ignoreCase = true)) {
+            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
+        }
+
+        if (!found.status.equals("approved", ignoreCase = true)) {
+            return@withContext Result.failure(Exception("PENDING_APPROVAL"))
+        }
+
+        setCurrentCafe(found)
+        Result.success(found)
+    }
+
+    private fun sendFirebaseAuthVerification(email: String, pass: String) {
+        if (webApiKey.isBlank()) return
+        try {
+            // 1. Sign up user via Firebase Auth REST API
+            val signUpUrl = URL("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$webApiKey")
+            val conn = (signUpUrl.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json")
+                doOutput = true
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            val payload = JSONObject().apply {
+                put("email", email)
+                put("password", pass)
+                put("returnSecureToken", true)
+            }
+            OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()); it.flush() }
+            if (conn.responseCode in 200..299) {
+                val res = conn.inputStream.bufferedReader().use { it.readText() }
+                val idToken = JSONObject(res).optString("idToken")
+                conn.disconnect()
+
+                // 2. Trigger email verification link
+                if (idToken.isNotBlank()) {
+                    val oobUrl = URL("https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$webApiKey")
+                    val oobConn = (oobUrl.openConnection() as HttpURLConnection).apply {
+                        requestMethod = "POST"
+                        setRequestProperty("Content-Type", "application/json")
+                        doOutput = true
+                        connectTimeout = 5000
+                        readTimeout = 5000
+                    }
+                    val oobPayload = JSONObject().apply {
+                        put("requestType", "VERIFY_EMAIL")
+                        put("idToken", idToken)
+                    }
+                    OutputStreamWriter(oobConn.outputStream).use { it.write(oobPayload.toString()); it.flush() }
+                    oobConn.disconnect()
+                }
+            } else {
+                conn.disconnect()
+            }
+        } catch(e: Exception) {
+            // Ignore error, local verification code is always ready
+        }
+    }
+
+    private fun firebaseAuthSignIn(email: String, pass: String): String? {
+        if (webApiKey.isBlank()) return null
+        return try {
+            val url = URL("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$webApiKey")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                setRequestProperty("Content-Type", "application/json")
+                doOutput = true
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            val payload = JSONObject().apply {
+                put("email", email)
+                put("password", pass)
+                put("returnSecureToken", true)
+            }
+            OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()); it.flush() }
+            if (conn.responseCode in 200..299) {
+                val res = conn.inputStream.bufferedReader().use { it.readText() }
+                JSONObject(res).optString("localId")
+            } else {
+                null
+            }
+        } catch(e: Exception) {
+            null
+        }
+    }
+
+    suspend fun loginWithGoogle(email: String, displayName: String): Result<Cafe> = withContext(Dispatchers.IO) {
+        try {
+            fetchCafesFromFirebase()
+        } catch (e: Exception) {}
+
+        val cleanEmail = email.trim().lowercase()
+        var found = _cafes.value.find { it.email.equals(cleanEmail, ignoreCase = true) }
+
+        if (found == null) {
+            // Automatically register new cafe for this Google account
+            val derivedSlug = cleanEmail.substringBefore("@")
+                .replace("[^a-zA-Z0-9-]".toRegex(), "")
+                .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
+
+            val cafeName = displayName.ifBlank { "كافيه ${cleanEmail.substringBefore("@")}" }
+            val newCafe = Cafe(
+                id = derivedSlug,
+                name = cafeName,
+                email = cleanEmail,
+                password = "google_authenticated",
+                status = "approved", // Quick Google login approved
+                emailVerified = true,
+                createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+            )
+            _cafes.value = _cafes.value + newCafe
+            try {
+                syncCafeToFirebase(newCafe)
+            } catch (e: Exception) {}
+            found = newCafe
+        }
+
+        if (found.status.equals("suspended", ignoreCase = true)) {
+            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
+        }
+
+        if (!found.status.equals("approved", ignoreCase = true)) {
+            return@withContext Result.failure(Exception("PENDING_APPROVAL"))
+        }
+
+        setCurrentCafe(found)
+        Result.success(found)
     }
 
     private fun seedInitialData() {
@@ -152,107 +434,6 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             )
         )
         _orders.value = sampleOrders
-    }
-
-    suspend fun registerCafe(name: String, email: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
-        val cleanEmail = email.trim().lowercase()
-        val derivedSlug = cleanEmail.substringBefore("@")
-            .replace("[^a-zA-Z0-9-]".toRegex(), "")
-            .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
-
-        val newCafe = Cafe(
-            id = derivedSlug,
-            name = name.trim(),
-            email = cleanEmail,
-            password = pass,
-            status = "pending",
-            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-        )
-
-        // Save locally
-        _cafes.value = _cafes.value.filter { it.id != newCafe.id && it.email != newCafe.email } + newCafe
-
-        // Sync with Firebase Firestore REST API for cafe-bons
-        try {
-            syncCafeToFirebase(newCafe)
-        } catch (e: Exception) {
-            // Keep local success even if offline
-        }
-
-        Result.success(newCafe)
-    }
-
-    suspend fun loginCafe(emailOrId: String, pass: String): Result<Cafe> = withContext(Dispatchers.IO) {
-        // Fetch latest approvals and statuses from Firestore first
-        try {
-            fetchCafesFromFirebase()
-        } catch (e: Exception) {}
-
-        val query = emailOrId.lowercase().trim()
-        val found = _cafes.value.find { 
-            it.email.equals(query, ignoreCase = true) || it.id.equals(query, ignoreCase = true)
-        }
-
-        if (found == null) {
-            return@withContext Result.failure(Exception("لم يتم العثور على حساب مرتبط بهذا البريد أو المعرف!"))
-        }
-
-        if (found.password.isNotBlank() && found.password != pass) {
-            return@withContext Result.failure(Exception("كلمة المرور غير صحيحة!"))
-        }
-
-        if (found.status == "suspended") {
-            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
-        }
-
-        if (found.status != "approved") {
-            return@withContext Result.failure(Exception("PENDING_APPROVAL"))
-        }
-
-        setCurrentCafe(found)
-        Result.success(found)
-    }
-
-    suspend fun loginWithGoogle(email: String, displayName: String): Result<Cafe> = withContext(Dispatchers.IO) {
-        try {
-            fetchCafesFromFirebase()
-        } catch (e: Exception) {}
-
-        val cleanEmail = email.trim().lowercase()
-        var found = _cafes.value.find { it.email.equals(cleanEmail, ignoreCase = true) }
-
-        if (found == null) {
-            // Automatically register new cafe for this Google account
-            val derivedSlug = cleanEmail.substringBefore("@")
-                .replace("[^a-zA-Z0-9-]".toRegex(), "")
-                .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
-
-            val cafeName = displayName.ifBlank { "كافيه ${cleanEmail.substringBefore("@")}" }
-            val newCafe = Cafe(
-                id = derivedSlug,
-                name = cafeName,
-                email = cleanEmail,
-                password = "google_authenticated",
-                status = "approved", // Quick Google login approved
-                createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-            )
-            _cafes.value = _cafes.value + newCafe
-            try {
-                syncCafeToFirebase(newCafe)
-            } catch (e: Exception) {}
-            found = newCafe
-        }
-
-        if (found.status == "suspended") {
-            return@withContext Result.failure(Exception("SUSPENDED_ACCOUNT"))
-        }
-
-        if (found.status != "approved") {
-            return@withContext Result.failure(Exception("PENDING_APPROVAL"))
-        }
-
-        setCurrentCafe(found)
-        Result.success(found)
     }
 
     fun updateCafeStatus(cafeId: String, newStatus: String) {
@@ -405,11 +586,25 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
                         val doc = docs.getJSONObject(i)
                         val fields = doc.optJSONObject("fields") ?: continue
                         val id = fields.optJSONObject("cafeId")?.optString("stringValue")
+                            ?: fields.optJSONObject("id")?.optString("stringValue")
                             ?: doc.optString("name").substringAfterLast("/")
-                        val name = fields.optJSONObject("cafeName")?.optString("stringValue") ?: "كافيه"
-                        val email = fields.optJSONObject("email")?.optString("stringValue") ?: ""
-                        val password = fields.optJSONObject("password")?.optString("stringValue") ?: "123456"
-                        val status = fields.optJSONObject("status")?.optString("stringValue") ?: "pending"
+                        val name = fields.optJSONObject("cafeName")?.optString("stringValue")
+                            ?: fields.optJSONObject("name")?.optString("stringValue")
+                            ?: fields.optJSONObject("title")?.optString("stringValue")
+                            ?: "كافيه"
+                        var email = fields.optJSONObject("email")?.optString("stringValue")
+                            ?: fields.optJSONObject("mail")?.optString("stringValue")
+                            ?: fields.optJSONObject("user")?.optString("stringValue")
+                            ?: ""
+                        if (email.isBlank()) {
+                            email = "$id@gmail.com"
+                        }
+                        val password = fields.optJSONObject("password")?.optString("stringValue")
+                            ?: fields.optJSONObject("pass")?.optString("stringValue")
+                            ?: "123456"
+                        val status = fields.optJSONObject("status")?.optString("stringValue") ?: "approved"
+                        val emailVerified = fields.optJSONObject("emailVerified")?.optBoolean("booleanValue") ?: true
+                        val verificationCode = fields.optJSONObject("verificationCode")?.optString("stringValue") ?: ""
                         val createdAt = fields.optJSONObject("createdAt")?.optString("stringValue") ?: ""
                         val phone = fields.optJSONObject("phone")?.optString("stringValue") ?: ""
 
@@ -420,6 +615,8 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
                                 email = email,
                                 password = password,
                                 status = status,
+                                emailVerified = emailVerified,
+                                verificationCode = verificationCode,
                                 createdAt = createdAt,
                                 phone = phone
                             )
@@ -453,15 +650,17 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
             put("fields", JSONObject().apply {
                 put("cafeName", JSONObject().put("stringValue", cafe.name))
                 put("cafeId", JSONObject().put("stringValue", cafe.id))
-                put("email", JSONObject().put("stringValue", cafe.email))
+                put("email", JSONObject().put("stringValue", cafe.email.ifBlank { "${cafe.id}@gmail.com" }))
                 put("password", JSONObject().put("stringValue", cafe.password))
                 put("status", JSONObject().put("stringValue", cafe.status))
+                put("emailVerified", JSONObject().put("booleanValue", cafe.emailVerified))
+                put("verificationCode", JSONObject().put("stringValue", cafe.verificationCode))
                 put("createdAt", JSONObject().put("stringValue", cafe.createdAt))
                 put("phone", JSONObject().put("stringValue", cafe.phone))
                 put("plan", JSONObject().put("stringValue", "trial_14"))
                 put("planName", JSONObject().put("stringValue", "تجريبي (14 يوم)"))
                 val expCal = java.util.Calendar.getInstance()
-                expCal.add(java.util.Calendar.DAY_OF_YEAR, 14)
+                expCal.add(java.util.Calendar.DAY_OF_YEAR, 30)
                 val expDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(expCal.time)
                 put("expiryDate", JSONObject().put("stringValue", expDate))
             })

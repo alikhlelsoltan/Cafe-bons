@@ -40,6 +40,18 @@ class MainViewModel(
     private val _isPendingView = MutableStateFlow(false)
     val isPendingView: StateFlow<Boolean> = _isPendingView.asStateFlow()
 
+    private val _isVerifyingEmail = MutableStateFlow(false)
+    val isVerifyingEmail: StateFlow<Boolean> = _isVerifyingEmail.asStateFlow()
+
+    private val _generatedVerificationCode = MutableStateFlow("")
+    val generatedVerificationCode: StateFlow<String> = _generatedVerificationCode.asStateFlow()
+
+    private val _lastAttemptEmail = MutableStateFlow("alikhlel132@gmail.com")
+    val lastAttemptEmail: StateFlow<String> = _lastAttemptEmail.asStateFlow()
+
+    private val _lastRegisteredCafeId = MutableStateFlow("")
+    val lastRegisteredCafeId: StateFlow<String> = _lastRegisteredCafeId.asStateFlow()
+
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
 
@@ -94,11 +106,13 @@ class MainViewModel(
             _authError.value = "الرجاء إدخال البريد الإلكتروني وكلمة المرور"
             return
         }
+        _lastAttemptEmail.value = emailOrId.trim()
         viewModelScope.launch {
             val result = repository.loginCafe(emailOrId, pass)
             result.onSuccess {
                 _authError.value = null
                 _isPendingView.value = false
+                _isVerifyingEmail.value = false
                 _currentScreen.value = Screen.DASHBOARD
             }.onFailure { err ->
                 if (err.message == "PENDING_APPROVAL") {
@@ -114,11 +128,13 @@ class MainViewModel(
     }
 
     fun loginWithGoogle(email: String = "alikhlel132@gmail.com", displayName: String = "كافيه البستان") {
+        _lastAttemptEmail.value = email.trim()
         viewModelScope.launch {
             val result = repository.loginWithGoogle(email, displayName)
             result.onSuccess {
                 _authError.value = null
                 _isPendingView.value = false
+                _isVerifyingEmail.value = false
                 _currentScreen.value = Screen.DASHBOARD
                 _toastMessage.value = "مرحباً بك! تم تسجيل الدخول بنجاح عبر حساب Google ($email)"
             }.onFailure { err ->
@@ -134,35 +150,100 @@ class MainViewModel(
         }
     }
 
-    fun register(name: String, email: String, pass: String) {
-        if (name.isBlank() || email.isBlank() || pass.isBlank()) {
-            _authError.value = "الرجاء تعبئة اسم الكافيه والبريد الإلكتروني وكلمة المرور"
+    fun register(
+        name: String,
+        whatsappPhone: String,
+        email: String,
+        pass: String,
+        confirmPass: String
+    ) {
+        if (name.isBlank()) {
+            _authError.value = "الرجاء إدخال اسم الكافيه"
             return
         }
+        if (whatsappPhone.isBlank()) {
+            _authError.value = "الرجاء إدخال رقم الواتساب للتواصل وتفعيل الحساب"
+            return
+        }
+        if (email.isBlank() || !email.contains("@")) {
+            _authError.value = "الرجاء إدخال بريد إلكتروني صحيح"
+            return
+        }
+        if (pass.isBlank() || pass.length < 6) {
+            _authError.value = "يجب أن تتكون كلمة السر من 6 خانات أو أكثر"
+            return
+        }
+        if (pass != confirmPass) {
+            _authError.value = "كلمتا السر غير متطابقتين! يرجى إعادة كتابة كلمة السر للتأكيد"
+            return
+        }
+
+        _lastAttemptEmail.value = email.trim()
         viewModelScope.launch {
-            val result = repository.registerCafe(name, email, pass)
-            result.onSuccess {
+            val result = repository.registerCafe(name, email, pass, whatsappPhone)
+            result.onSuccess { cafe ->
                 _authError.value = null
-                _isPendingView.value = true
+                _lastRegisteredCafeId.value = cafe.id
+                _generatedVerificationCode.value = cafe.verificationCode
+                _isVerifyingEmail.value = true
+                _isPendingView.value = false
             }.onFailure {
                 _authError.value = "خطأ أثناء التسجيل: ${it.message}"
             }
         }
     }
 
+    fun switchToLoginWithEmail(email: String) {
+        _lastAttemptEmail.value = email.trim()
+        _isPendingView.value = false
+        _isVerifyingEmail.value = false
+        _authTab.value = AuthTab.LOGIN
+    }
+
+    fun confirmEmail(code: String) {
+        val cafeIdOrEmail = _lastRegisteredCafeId.value.ifBlank { _lastAttemptEmail.value }
+        viewModelScope.launch {
+            val res = repository.verifyEmailCode(cafeIdOrEmail, code)
+            res.onSuccess {
+                _authError.value = null
+                _isVerifyingEmail.value = false
+                _isPendingView.value = true
+                _toastMessage.value = "تم تأكيد ملكية البريد الإلكتروني بنجاح! طلبك الآن بانتظار اعتماد المطور."
+            }.onFailure {
+                _authError.value = it.message ?: "رمز التحقق غير صحيح"
+            }
+        }
+    }
+
+    fun skipEmailVerificationToPending() {
+        _isVerifyingEmail.value = false
+        _isPendingView.value = true
+    }
+
     fun checkPendingApproval() {
         viewModelScope.launch {
             repository.fetchCafesFromFirebase()
-            val approved = repository.cafes.value.find { it.status == "approved" }
-            val pending = repository.cafes.value.find { it.status == "pending" }
-            if (pending == null && approved != null) {
-                repository.setCurrentCafe(approved)
+            val query = _lastAttemptEmail.value.lowercase().trim()
+            val cafeId = _lastRegisteredCafeId.value.lowercase().trim()
+
+            val found = repository.cafes.value.find { cafe ->
+                val e = cafe.email.lowercase().trim()
+                val id = cafe.id.lowercase().trim()
+                (query.isNotEmpty() && (e == query || e.substringBefore("@") == query.substringBefore("@") || id == query)) ||
+                (cafeId.isNotEmpty() && id == cafeId)
+            } ?: repository.cafes.value.find { it.status.equals("approved", ignoreCase = true) }
+
+            if (found != null && found.status.equals("approved", ignoreCase = true)) {
+                repository.setCurrentCafe(found)
                 _isPendingView.value = false
+                _isVerifyingEmail.value = false
                 _authError.value = null
                 _currentScreen.value = Screen.DASHBOARD
-                _toastMessage.value = "تهانينا! تم اعتماد وتفعيل حسابك بنجاح."
+                _toastMessage.value = "تهانينا! تم اعتماد وتفعيل حسابك (${found.name}) بنجاح."
+            } else if (found != null && found.status.equals("suspended", ignoreCase = true)) {
+                _authError.value = "⛔ هذا الحساب موقوف أو معلق من إدارة النظام."
             } else {
-                _toastMessage.value = "الطلب ما زال قيد المراجعة في لوحة تحكم المطور."
+                _toastMessage.value = "الطلب ما زال قيد المراجعة في لوحة تحكم المطور. اضغط فحص مجدداً بعد الموافقة."
             }
         }
     }
