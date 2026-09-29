@@ -10,10 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
@@ -37,27 +35,23 @@ import com.smartmenu.cafeapp.ui.viewmodel.MainViewModel
 fun AuthScreen(viewModel: MainViewModel) {
     val authTab by viewModel.authTab.collectAsState()
     val isPendingView by viewModel.isPendingView.collectAsState()
-    val isVerifyingEmail by viewModel.isVerifyingEmail.collectAsState()
-    val generatedVerificationCode by viewModel.generatedVerificationCode.collectAsState()
     val lastAttemptEmail by viewModel.lastAttemptEmail.collectAsState()
     val authError by viewModel.authError.collectAsState()
 
-    var loginEmail by remember { mutableStateOf("alikhlel132@gmail.com") }
+    var loginEmail by remember { mutableStateOf(lastAttemptEmail.ifBlank { "alikhlel132@gmail.com" }) }
     var loginPassword by remember { mutableStateOf("1234567") }
 
-    // Register Form Fields as requested
+    // Register Form Fields as requested by user
     var regName by remember { mutableStateOf("") }
     var regWhatsapp by remember { mutableStateOf("+964 ") }
     var regEmail by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regConfirmPassword by remember { mutableStateOf("") }
 
-    var inputOtpCode by remember { mutableStateOf("") }
-
-    // Synchronize OTP when generated
-    LaunchedEffect(generatedVerificationCode) {
-        if (generatedVerificationCode.isNotBlank()) {
-            inputOtpCode = generatedVerificationCode
+    // Keep login email updated if lastAttemptEmail changes
+    LaunchedEffect(lastAttemptEmail) {
+        if (lastAttemptEmail.isNotBlank()) {
+            loginEmail = lastAttemptEmail
         }
     }
 
@@ -135,121 +129,8 @@ fun AuthScreen(viewModel: MainViewModel) {
                     }
                 }
 
-                if (isVerifyingEmail) {
-                    // STEP 2: Email Verification Screen
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("email_verification_view"),
-                        colors = CardDefaults.cardColors(containerColor = Color(0x22F0A500)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MarkEmailRead,
-                                contentDescription = null,
-                                tint = GoldPrimary,
-                                modifier = Modifier.size(46.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "التحقق من البريد الإلكتروني",
-                                fontWeight = FontWeight.Bold,
-                                color = GoldPrimary,
-                                fontSize = 18.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "أدخل رمز التأكيد لتثبيت ملكية البريد:\n$lastAttemptEmail",
-                                color = TextWhite,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Verification OTP code display box
-                            Box(
-                                modifier = Modifier
-                                    .background(DarkCard, RoundedCornerShape(10.dp))
-                                    .border(1.dp, GoldPrimary, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 24.dp, vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = generatedVerificationCode.ifBlank { "748921" },
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Black,
-                                    letterSpacing = 4.sp,
-                                    color = GoldPrimary
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            OutlinedTextField(
-                                value = inputOtpCode,
-                                onValueChange = { inputOtpCode = it },
-                                placeholder = { Text("أدخل رمز التحقق (OTP)", color = TextMuted) },
-                                leadingIcon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = GoldPrimary) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("otp_input"),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = GoldPrimary,
-                                    unfocusedBorderColor = DarkBorder,
-                                    focusedContainerColor = DarkInput,
-                                    unfocusedContainerColor = DarkInput,
-                                    focusedTextColor = TextWhite,
-                                    unfocusedTextColor = TextWhite
-                                ),
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Button(
-                                onClick = { viewModel.confirmEmail(inputOtpCode) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .testTag("confirm_email_btn"),
-                                colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text(
-                                    text = "تأكيد البريد الإلكتروني والمتابعة ✓",
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            TextButton(
-                                onClick = { viewModel.skipEmailVerificationToPending() },
-                                modifier = Modifier.testTag("skip_to_pending_btn")
-                            ) {
-                                Text(
-                                    text = "الانتقال مباشرة إلى مراجعة الطلب ➡️",
-                                    color = TextGray,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
-
-                } else if (isPendingView) {
-                    // STEP 3: Pending Review Message (As Requested by User)
+                if (isPendingView) {
+                    // Pending Review Screen (As Requested by User)
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -266,31 +147,31 @@ fun AuthScreen(viewModel: MainViewModel) {
                         ) {
                             Text(
                                 text = "⏳",
-                                fontSize = 42.sp
+                                fontSize = 44.sp
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = "تتم مراجعة طلبك\nسيتم تفعيل حسابك باقرب وقت",
                                 fontWeight = FontWeight.Bold,
                                 color = GoldPrimary,
                                 fontSize = 18.sp,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 24.sp
+                                lineHeight = 26.sp
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "تم تسجيل طلب كافيهك بالبريد:\n$lastAttemptEmail\n\nيقوم مطور النظام حالياً بمراجعة طلبك وتفعيل الاشتراك من لوحة تحكم المطور السحابية. بعد الموافقة، يمكنك الدخول مباشرة من شاشة تسجيل الدخول.",
+                                text = "تم تسجيل طلبك بنجاح للبريد:\n$lastAttemptEmail\n\nيقوم مطور النظام حالياً بمراجعة طلبك وتفعيل الاشتراك من لوحة تحكم المطور. بعد الموافقة، يمكنك الدخول مباشرة من شاشة تسجيل الدخول.",
                                 color = TextWhite,
                                 fontSize = 13.sp,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 19.sp
+                                lineHeight = 20.sp
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Button 1: Go to Login (User's preferred flow)
+                    // Button 1: Switch to Login (User's requested next step)
                     Button(
                         onClick = { viewModel.switchToLoginWithEmail(lastAttemptEmail) },
                         modifier = Modifier
@@ -304,7 +185,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             text = "الانتقال إلى تسجيل الدخول 🔑",
                             color = Color.Black,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 15.sp
                         )
                     }
 
@@ -392,7 +273,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             OutlinedTextField(
                                 value = loginEmail,
                                 onValueChange = { loginEmail = it },
-                                placeholder = { Text("مثال: alikhlel132@gmail.com أو اسم الكافيه", color = TextMuted) },
+                                placeholder = { Text("مثال: alikhlel132@gmail.com", color = TextMuted) },
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = GoldPrimary) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 modifier = Modifier
@@ -491,7 +372,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                             )
                         }
                     } else {
-                        // Register Form (Matching User's Specified Flow Exactly)
+                        // Register Form (Direct and Clean: Name, WhatsApp, Email, Pass, Confirm Pass)
                         Column(modifier = Modifier.fillMaxWidth()) {
                             // 1. Cafe Name
                             Text(
@@ -644,7 +525,7 @@ fun AuthScreen(viewModel: MainViewModel) {
 
                             Spacer(modifier = Modifier.height(22.dp))
 
-                            // Button: "التالي" (Next)
+                            // Button: "إنشاء الحساب 🚀"
                             Button(
                                 onClick = {
                                     viewModel.register(
@@ -663,7 +544,7 @@ fun AuthScreen(viewModel: MainViewModel) {
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(
-                                    text = "التالي ➡️",
+                                    text = "إنشاء الحساب 🚀",
                                     color = Color.Black,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp

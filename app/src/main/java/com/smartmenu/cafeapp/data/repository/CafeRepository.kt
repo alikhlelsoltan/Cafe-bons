@@ -68,36 +68,24 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
 
     suspend fun registerCafe(name: String, email: String, pass: String, whatsappPhone: String = ""): Result<Cafe> = withContext(Dispatchers.IO) {
         val cleanEmail = email.trim().lowercase()
-        val derivedSlug = cleanEmail.substringBefore("@")
+        val slugBase = cleanEmail.substringBefore("@")
             .replace("[^a-zA-Z0-9-]".toRegex(), "")
-            .ifBlank { "cafe-" + (System.currentTimeMillis() % 100000) }
-
-        // Generate 6-digit verification code
-        val generatedCode = (100000..999999).random().toString()
+            .ifBlank { "cafe" }
+        val uniqueId = "$slugBase-${System.currentTimeMillis() % 100000}"
 
         val newCafe = Cafe(
-            id = derivedSlug,
+            id = uniqueId,
             name = name.trim(),
             email = cleanEmail,
-            password = pass,
+            password = pass.trim(),
             phone = whatsappPhone.trim().ifBlank { "+964 770 000 0000" },
             status = "pending",
-            emailVerified = false,
-            verificationCode = generatedCode,
+            emailVerified = true,
             createdAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
         )
 
-        // Save locally
-        _cafes.value = _cafes.value.filter { it.id != newCafe.id && it.email != newCafe.email } + newCafe
-
-        // If Web API Key is present, attempt to create Firebase Auth user and trigger official email
-        if (webApiKey.isNotBlank()) {
-            try {
-                sendFirebaseAuthVerification(cleanEmail, pass)
-            } catch (e: Exception) {
-                // Non-fatal, app verification code is always available as guaranteed fallback
-            }
-        }
+        // Save locally - replace any previous state for this email
+        _cafes.value = _cafes.value.filter { it.email != newCafe.email } + newCafe
 
         // Sync with Firebase Firestore REST API for cafe-bons
         try {

@@ -184,9 +184,9 @@ class MainViewModel(
             result.onSuccess { cafe ->
                 _authError.value = null
                 _lastRegisteredCafeId.value = cafe.id
-                _generatedVerificationCode.value = cafe.verificationCode
-                _isVerifyingEmail.value = true
-                _isPendingView.value = false
+                _isVerifyingEmail.value = false
+                _isPendingView.value = true
+                _toastMessage.value = "تم إرسال طلبك بنجاح! سيتم تفعيل حسابك بأقرب وقت."
             }.onFailure {
                 _authError.value = "خطأ أثناء التسجيل: ${it.message}"
             }
