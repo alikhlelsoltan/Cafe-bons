@@ -36,7 +36,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     private val _tables = MutableStateFlow<List<TableInfo>>(emptyList())
     val tables: StateFlow<List<TableInfo>> = _tables.asStateFlow()
 
-    private var webApiKey: String = "AIzaSyAJ5lYgz7GGUkUNMU2LJFqB1WoR09Ipgjg"
+    private var webApiKey: String = "AIzaSyAcu6s5zCgpNv4MSl7cbaVIbsq9Bvqs4Mc"
 
     init {
         seedInitialData()
@@ -48,7 +48,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
 
     suspend fun fetchFirebaseSettings() = withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/settings/firebase")
+            val url = URL("https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/settings/firebase")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 4000
@@ -558,7 +558,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
 
     suspend fun fetchCafesFromFirebase() = withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes")
+            val url = URL("https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/cafes")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 5000
@@ -624,7 +624,7 @@ class CafeRepository(private val scope: CoroutineScope = CoroutineScope(Dispatch
     }
 
     private fun syncCafeToFirebase(cafe: Cafe) {
-        val firestoreUrl = "https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafe.id}"
+        val firestoreUrl = "https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/cafes/${cafe.id}"
         val url = URL(firestoreUrl)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "PATCH"

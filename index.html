@@ -694,9 +694,9 @@
         status: 'pending'
       };
 
-      // Sync with Firebase Firestore REST API for cafe-bons
+      // Sync with Firebase Firestore REST API for cafe1111111111111
       try {
-        await fetch(`https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafeId}/orders/${orderRef}`, {
+        await fetch(`https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/cafes/${cafeId}/orders/${orderRef}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

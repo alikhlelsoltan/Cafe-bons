@@ -657,7 +657,7 @@
       if (!cafe || !cafe.id) return;
       const cleanEmail = cafe.email && cafe.email.trim() ? cafe.email.trim() : (cafe.id.includes('@') ? cafe.id : cafe.id + '@gmail.com');
       try {
-        await fetch(`https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes/${cafe.id}`, {
+        await fetch(`https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/cafes/${cafe.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -683,7 +683,7 @@
 
     async function loadCafesFromFirestore(showAlert = false) {
       try {
-        const res = await fetch('https://firestore.googleapis.com/v1/projects/cafe-bons/databases/(default)/documents/cafes');
+        const res = await fetch('https://firestore.googleapis.com/v1/projects/cafe1111111111111/databases/(default)/documents/cafes');
         if (res.ok) {
           const data = await res.json();
           if (data.documents && data.documents.length > 0) {

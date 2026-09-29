@@ -8,7 +8,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.smartmenu.cafeapp"
+        applicationId = "com.cafebons.smartmenu"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
